@@ -15,10 +15,10 @@ MonoBehaviour:
   active: 1
   lift:
     m_OverrideState: 1
-    m_Value: {x: 0.97990644, y: 1, z: 0.9952989, w: 0}
+    m_Value: {x: 0.9918271, y: 1, z: 0.9859232, w: 0}
   gamma:
     m_OverrideState: 1
-    m_Value: {x: 1, y: 1, z: 1, w: 0}
+    m_Value: {x: 0.97331375, y: 1, z: 0.98622775, w: 0}
   gain:
     m_OverrideState: 1
     m_Value: {x: 1, y: 1, z: 1, w: 0}
@@ -598,10 +598,10 @@ MonoBehaviour:
   active: 1
   shadows:
     m_OverrideState: 1
-    m_Value: {x: 1, y: 1, z: 1, w: 0}
+    m_Value: {x: 0.9935277, y: 0.9951458, z: 1, w: 0}
   midtones:
     m_OverrideState: 1
-    m_Value: {x: 1, y: 1, z: 1, w: 0}
+    m_Value: {x: 0.9766635, y: 0.99560094, z: 1, w: 0}
   highlights:
     m_OverrideState: 1
     m_Value: {x: 1, y: 1, z: 1, w: 0}
@@ -903,16 +903,16 @@ MonoBehaviour:
   active: 1
   fogDensity:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 8.8
   fogDistance:
     m_OverrideState: 1
     m_Value: 10
   fogColor:
     m_OverrideState: 1
-    m_Value: {r: 1, g: 1, b: 1, a: 1}
+    m_Value: {r: 0.4339623, g: 0.4339623, b: 0.4339623, a: 1}
   ambientColor:
     m_OverrideState: 1
-    m_Value: {r: 0.1, g: 0.1, b: 0.1, a: 0.1}
+    m_Value: {r: 0.1981132, g: 0.1981132, b: 0.1981132, a: 0.1}
   fogNear:
     m_OverrideState: 1
     m_Value: 1
