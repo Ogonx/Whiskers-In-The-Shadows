@@ -1,38 +1,42 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-[RequireComponent(typeof(Rigidbody))]
-[RequireComponent(typeof(Animator))]
 public class CatController : MonoBehaviour
 {
     [Header("Movement")]
     public float walkSpeed = 3f;
     public float runSpeed = 6f;
+    public float rotationSpeed = 10f;
+
+    [Header("Jump")]
     public float jumpForce = 5f;
+    public float jumpCooldown = 0.6f;
 
     [Header("Ground Check")]
     public Transform groundCheck;
-    public float groundDistance = 0.2f;
+    public float groundCheckRadius = 0.15f;
     public LayerMask groundMask;
 
     private Rigidbody rb;
     private Animator animator;
-    private bool isGrounded;
     private CatControls controls;
-    private Vector2 moveInput = Vector2.zero;
-    private bool isRunning = false;
+    private Vector2 moveInput;
+    private bool isRunning;
+    private bool isGrounded;
+    private float jumpCooldownTimer;
 
     void Awake()
     {
         controls = new CatControls();
+
         controls.Player.Move.performed += ctx => moveInput = ctx.ReadValue<Vector2>();
         controls.Player.Move.canceled += ctx => moveInput = Vector2.zero;
-        controls.Player.Run.performed += ctx => isRunning = ctx.ReadValueAsButton();
+
+        controls.Player.Run.performed += ctx => isRunning = true;
         controls.Player.Run.canceled += ctx => isRunning = false;
-        controls.Player.Jump.performed += ctx => OnJump();
-        controls.Player.Interact.performed += ctx => OnInteract();
-        controls.Player.Crouch.performed += ctx => animator?.SetBool("Crouched", true);
-        controls.Player.Crouch.canceled += ctx => animator?.SetBool("Crouched", false);
+
+        controls.Player.Jump.performed += ctx => TryJump();
+
         controls.Enable();
     }
 
@@ -41,66 +45,95 @@ public class CatController : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         animator = GetComponent<Animator>();
 
-        rb.interpolation = RigidbodyInterpolation.Interpolate;
-        rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
-        rb.freezeRotation = true;
-
+        // auto-create groundCheck if you forgot to assign one
         if (groundCheck == null)
         {
             groundCheck = new GameObject("GroundCheck").transform;
             groundCheck.SetParent(transform);
-            groundCheck.localPosition = new Vector3(0, -0.35f, 0);
+            groundCheck.localPosition = new Vector3(0f, 0.05f, 0f);
         }
     }
 
-    void FixedUpdate()
+    void Update()
     {
-        // Ground check
-        isGrounded = Physics.CheckSphere(groundCheck.position, groundDistance, groundMask);
+        UpdateGrounded();
+        HandleMovement();
+        UpdateTimers();
+    }
+
+    // ----------------- MOVEMENT -----------------
+
+    private void HandleMovement()
+    {
+        Vector3 input = new Vector3(moveInput.x, 0f, moveInput.y);
+        bool hasInput = input.sqrMagnitude > 0.01f;
+
+        float targetSpeed = isRunning ? runSpeed : walkSpeed;
+
+        // direction relative to cat facing
+        Vector3 moveDir =
+            (transform.forward * input.z +
+             transform.right * input.x).normalized * targetSpeed;
+
+        // apply horizontal velocity (no sliding)
+        Vector3 vel = rb.linearVelocity;
+        vel.x = moveDir.x;
+        vel.z = moveDir.z;
+        rb.linearVelocity = vel;
+
+        // rotate towards movement direction
+        if (hasInput && moveDir.sqrMagnitude > 0.0001f)
+        {
+            Quaternion targetRot = Quaternion.LookRotation(moveDir, Vector3.up);
+            transform.rotation = Quaternion.Slerp(
+                transform.rotation,
+                targetRot,
+                rotationSpeed * Time.deltaTime);
+        }
+
+        // animation speed based on horizontal velocity
+        float horizontalSpeed = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z).magnitude;
+        animator.SetFloat("Speed", horizontalSpeed);   // use this in your blend tree
+    }
+
+    // ----------------- JUMP -----------------
+
+    private void TryJump()
+    {
+        if (!isGrounded) return;                 // can only jump on ground
+        if (jumpCooldownTimer > 0f) return;      // cooldown not finished
+
+        // reset vertical velocity so jumps are consistent
+        Vector3 vel = rb.linearVelocity;
+        vel.y = 0f;
+        rb.linearVelocity = vel;
+
+        rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+        jumpCooldownTimer = jumpCooldown;
+
+        animator.SetTrigger("Stretch");
+    }
+
+    // ----------------- GROUND CHECK -----------------
+
+    private void UpdateGrounded()
+    {
+        // Check against ALL layers for now (so floor is definitely detected)
+        isGrounded = Physics.CheckSphere(
+            groundCheck.position,
+            groundCheckRadius,
+            ~0);   // <--- this is the important change
+
         animator.SetBool("Grounded", isGrounded);
-
-        // Movement input -> world space relative to Cat forward
-        Vector3 direction = new Vector3(moveInput.x, 0, moveInput.y);
-
-        // Flip if the model faces the wrong way:
-        direction = transform.TransformDirection(direction);
-        float currentSpeed = isRunning ? runSpeed : walkSpeed;
-        Vector3 move = direction.normalized * currentSpeed * Time.fixedDeltaTime;
-
-        // Move and rotate
-        if (direction.sqrMagnitude > 0.0001f)
-        {
-            // MovePosition for smooth physics-movement
-            rb.MovePosition(rb.position + move);
-
-            // Rotate to movement direction
-            Quaternion targetRot = Quaternion.LookRotation(new Vector3(direction.x, 0, direction.z));
-            rb.MoveRotation(Quaternion.Slerp(rb.rotation, targetRot, Time.fixedDeltaTime * 10f));
-        }
-        else
-        {
-            // still call MovePosition even if zero to keep consistent physics updates
-            rb.MovePosition(rb.position);
-        }
-
-        // Drive animations: Speed parameter should match Blend Tree thresholds
-        // Use moveInput magnitude * speed so Walk=~1, Run=~3 (example)
-        float speedForAnimator = moveInput.magnitude * (isRunning ? runSpeed : walkSpeed);
-        animator.SetFloat("Speed", speedForAnimator, 0.1f, Time.fixedDeltaTime * 4f); // damped smoothing
     }
 
-    void OnJump()
-    {
-        if (isGrounded)
-        {
-            rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
-            animator.SetTrigger("Jump");
-        }
-    }
 
-    void OnInteract()
+    // ----------------- TIMERS -----------------
+
+    private void UpdateTimers()
     {
-        animator.SetTrigger("Interact");
+        if (jumpCooldownTimer > 0f)
+            jumpCooldownTimer -= Time.deltaTime;
     }
 
     void OnDestroy()
