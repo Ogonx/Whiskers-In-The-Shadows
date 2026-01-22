@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using TMPro;
 
 public class ScentClue : MonoBehaviour
 {
@@ -9,13 +10,13 @@ public class ScentClue : MonoBehaviour
     [Header("What this clue unlocks")]
     public ScentTrail trailToUnlock;
 
-    [Header("Show trail behaviour")]
-    public float showTrailSeconds = 3f;   // how long the trail stays visible after sniff
-    public bool showDebugLogs = true;
+    [Header("UI")]
+    public TextMeshProUGUI interactText;
+
+    [Header("Trail Timing")]
+    public float showTrailSeconds = 3f;
 
     private bool used = false;
-
-    // Cache the player so we don't Find every frame
     private GameObject player;
     private CatController controller;
 
@@ -24,62 +25,40 @@ public class ScentClue : MonoBehaviour
         player = GameObject.FindGameObjectWithTag("Player");
         if (player != null)
             controller = player.GetComponent<CatController>();
+
+        if (interactText != null)
+            interactText.gameObject.SetActive(false);
     }
 
     void Update()
     {
         if (used && oneTimeOnly) return;
 
-        // If player wasn't found yet (scene loads etc), try again
-        if (player == null)
-        {
-            player = GameObject.FindGameObjectWithTag("Player");
-            if (player != null) controller = player.GetComponent<CatController>();
-        }
+        if (player == null || controller == null) return;
 
-        if (player == null)
-        {
-            if (showDebugLogs)
-                Debug.LogWarning("No Player found. Tag your cat as Player.");
-            return;
-        }
-
-        if (controller == null)
-        {
-            controller = player.GetComponent<CatController>();
-            if (controller == null)
-            {
-                if (showDebugLogs)
-                    Debug.LogWarning("Player has no CatController component.");
-                return;
-            }
-        }
-
-        // Range check
         float dist = Vector3.Distance(transform.position, player.transform.position);
-        if (dist > interactRange) return;
 
-        if (showDebugLogs)
-            Debug.Log("In range of clue: " + gameObject.name);
+        bool inRange = dist <= interactRange;
+
+        // Show / hide UI prompt
+        if (interactText != null)
+            interactText.gameObject.SetActive(inRange);
+
+        if (!inRange) return;
 
         // Press E to sniff
         if (controller.ConsumeInteractPressed())
         {
-            if (trailToUnlock == null)
-            {
-                Debug.LogWarning("trailToUnlock is NOT assigned!");
-                return;
-            }
+            if (trailToUnlock == null) return;
 
             if (oneTimeOnly) used = true;
 
-            // Make sure the trail is unlocked, then show it briefly
             trailToUnlock.UnlockAndShow();
             trailToUnlock.ShowForSeconds(showTrailSeconds);
 
-
-            if (showDebugLogs)
-                Debug.Log("SNIFFED clue: " + gameObject.name + " (showing trail for " + showTrailSeconds + "s)");
+            // Hide prompt after interaction
+            if (interactText != null)
+                interactText.gameObject.SetActive(false);
         }
     }
 
