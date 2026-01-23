@@ -13,6 +13,10 @@ public class ScentClue : MonoBehaviour
     [Header("UI")]
     public TextMeshProUGUI interactText;
 
+    [Header("HUD Tip (bottom-left)")]
+    [SerializeField] private TipChipUI tipChip;
+    [SerializeField] private string qHintText = "[ Q ]  RE-SHOW TRAIL";
+
     [Header("Trail Timing")]
     public float showTrailSeconds = 3f;
 
@@ -33,11 +37,9 @@ public class ScentClue : MonoBehaviour
     void Update()
     {
         if (used && oneTimeOnly) return;
-
         if (player == null || controller == null) return;
 
         float dist = Vector3.Distance(transform.position, player.transform.position);
-
         bool inRange = dist <= interactRange;
 
         // Show / hide UI prompt
@@ -55,6 +57,9 @@ public class ScentClue : MonoBehaviour
 
             trailToUnlock.UnlockAndShow();
             trailToUnlock.ShowForSeconds(showTrailSeconds);
+
+            // ✅ After a successful sniff, teach Q (HUD)
+            if (tipChip) tipChip.Pop(qHintText);
 
             // Hide prompt after interaction
             if (interactText != null)

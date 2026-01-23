@@ -15345,6 +15345,9 @@ MonoBehaviour:
   showTime: 3
   trails:
   - {fileID: 928181954}
+  tipChip: {fileID: 1271053220}
+  qHintText: '[ Q ]  RE-SHOW TRAIL'
+  noScentText: NO SCENT TO TRACK
 --- !u!4 &1060030130 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: a10da8d26146bd946b3c4631ec6d775a, type: 3}
@@ -16555,6 +16558,8 @@ MonoBehaviour:
   oneTimeOnly: 1
   trailToUnlock: {fileID: 928181954}
   interactText: {fileID: 501749964}
+  tipChip: {fileID: 1271053220}
+  qHintText: '[ Q ]  RE-SHOW TRAIL'
   showTrailSeconds: 3
 --- !u!1001 &1147552870
 PrefabInstance:
@@ -18301,6 +18306,7 @@ GameObject:
   - component: {fileID: 1271053218}
   - component: {fileID: 1271053217}
   - component: {fileID: 1271053216}
+  - component: {fileID: 1271053220}
   m_Layer: 5
   m_Name: QPrompt
   m_TagString: Untagged
@@ -18337,7 +18343,7 @@ CanvasGroup:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1271053214}
   m_Enabled: 1
-  m_Alpha: 1
+  m_Alpha: 0
   m_Interactable: 0
   m_BlocksRaycasts: 0
   m_IgnoreParentGroups: 0
@@ -18404,6 +18410,22 @@ Canvas:
   m_SortingLayerID: 0
   m_SortingOrder: 0
   m_TargetDisplay: 0
+--- !u!114 &1271053220
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1271053214}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3eaadbad99cca0545a904b70d629fd16, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TipChipUI
+  canvasGroup: {fileID: 1271053216}
+  tipText: {fileID: 1639655626}
+  duration: 4
+  fadeOut: 0.25
 --- !u!1001 &1277181785
 PrefabInstance:
   m_ObjectHideFlags: 0
