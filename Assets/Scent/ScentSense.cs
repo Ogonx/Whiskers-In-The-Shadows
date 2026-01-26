@@ -23,27 +23,26 @@ public class ScentSense : MonoBehaviour
 
         if (controller.ConsumeSensePressed())
         {
-            bool showedAny = false;
+            // ✅ Priority: re-show the last smelled/unlocked trail
+            if (ScentClue.CurrentActiveTrail != null)
+            {
+                ScentClue.CurrentActiveTrail.ShowForSeconds(showTime);
 
+                if (tipChip) tipChip.Pop(qHintText);
+                return;
+            }
+
+            // Fallback: try any listed trails (optional)
+            bool showedAny = false;
             foreach (var t in trails)
             {
-                if (t != null)
-                {
-                    // This will only show if unlocked (your ScentTrail handles that)
-                    t.ShowForSeconds(showTime);
-                    showedAny = true; // we attempted; but could still be locked
-                }
+                if (t == null) continue;
+                t.ShowForSeconds(showTime);
+                showedAny = true;
             }
 
-            // ✅ Always give feedback on Q press:
-            // If you haven't unlocked anything yet, show a message so Q doesn't feel broken.
             if (tipChip)
-            {
-                // Better feedback:
-                // If you want strict check for unlocked-only, we can add a method in ScentTrail,
-                // but for now this keeps it simple and player-friendly.
-                tipChip.Pop(qHintText);
-            }
+                tipChip.Pop(showedAny ? qHintText : noScentText);
         }
     }
 }

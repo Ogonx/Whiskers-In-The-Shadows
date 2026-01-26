@@ -3,6 +3,9 @@ using TMPro;
 
 public class ScentClue : MonoBehaviour
 {
+    // ✅ Global "current scent" without a manager script
+    public static ScentTrail CurrentActiveTrail;
+
     [Header("Interaction")]
     public float interactRange = 2f;
     public bool oneTimeOnly = true;
@@ -10,8 +13,10 @@ public class ScentClue : MonoBehaviour
     [Header("What this clue unlocks")]
     public ScentTrail trailToUnlock;
 
-    [Header("UI")]
-    public TextMeshProUGUI interactText;
+    [Header("UI (Local prompt above THIS object)")]
+    [SerializeField] private GameObject promptRoot;
+    [SerializeField] private TextMeshProUGUI promptTMP;
+    [SerializeField] private string promptText = "Hold E to smell";
 
     [Header("HUD Tip (bottom-left)")]
     [SerializeField] private TipChipUI tipChip;
@@ -21,17 +26,23 @@ public class ScentClue : MonoBehaviour
     public float showTrailSeconds = 3f;
 
     private bool used = false;
-    private GameObject player;
+    private Transform player;
     private CatController controller;
 
     void Start()
     {
-        player = GameObject.FindGameObjectWithTag("Player");
-        if (player != null)
-            controller = player.GetComponent<CatController>();
+        GameObject p = GameObject.FindGameObjectWithTag("Player");
+        if (p != null)
+        {
+            player = p.transform;
+            controller = p.GetComponent<CatController>();
+        }
 
-        if (interactText != null)
-            interactText.gameObject.SetActive(false);
+        if (promptTMP != null)
+            promptTMP.text = promptText;
+
+        if (promptRoot != null)
+            promptRoot.SetActive(false);
     }
 
     void Update()
@@ -39,31 +50,30 @@ public class ScentClue : MonoBehaviour
         if (used && oneTimeOnly) return;
         if (player == null || controller == null) return;
 
-        float dist = Vector3.Distance(transform.position, player.transform.position);
+        float dist = Vector3.Distance(transform.position, player.position);
         bool inRange = dist <= interactRange;
 
-        // Show / hide UI prompt
-        if (interactText != null)
-            interactText.gameObject.SetActive(inRange);
+        if (promptRoot != null)
+            promptRoot.SetActive(inRange);
 
         if (!inRange) return;
 
-        // Press E to sniff
         if (controller.ConsumeInteractPressed())
         {
             if (trailToUnlock == null) return;
 
             if (oneTimeOnly) used = true;
 
+            // ✅ Make THIS the active trail for Q
+            CurrentActiveTrail = trailToUnlock;
+
             trailToUnlock.UnlockAndShow();
             trailToUnlock.ShowForSeconds(showTrailSeconds);
 
-            // ✅ After a successful sniff, teach Q (HUD)
             if (tipChip) tipChip.Pop(qHintText);
 
-            // Hide prompt after interaction
-            if (interactText != null)
-                interactText.gameObject.SetActive(false);
+            if (promptRoot != null)
+                promptRoot.SetActive(false);
         }
     }
 
