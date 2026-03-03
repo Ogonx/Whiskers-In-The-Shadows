@@ -17,21 +17,37 @@ public class CatController : MonoBehaviour
     public float groundCheckRadius = 0.15f;
     public LayerMask groundMask;
 
-    [Header("Input Buffer (fixes spamming)")]
-    public float inputBufferTime = 0.2f; // 0.15–0.25 feels good
+    [Header("Input Buffer")]
+    public float inputBufferTime = 0.2f;
 
-    private Rigidbody rb;
-    private Animator animator;
-    private CatControls controls;
+    [Header("Sniff Audio")]
+    [SerializeField] AudioSource sniffSource;
+    [SerializeField] AudioClip sniffClip;
+    [Range(0f, 1f)][SerializeField] float sniffVolume = 0.7f;
+    [SerializeField] Vector2 sniffPitchRange = new Vector2(0.92f, 1.05f);
 
-    private Vector2 moveInput;
-    private bool isRunning;
-    private bool isGrounded;
-    private float jumpCooldownTimer;
+    [Header("Footsteps")]
+    [SerializeField] AudioSource footstepSource;
+    [SerializeField] AudioClip[] footstepClipsHard;
+    [SerializeField] AudioClip[] footstepClipsSoft;
+    [SerializeField] float footstepInterval = 0.5f;
+    [SerializeField] Vector2 footstepPitchRange = new Vector2(0.9f, 1.1f);
+    [Range(0f, 1f)][SerializeField] float footstepVolume = 0.8f;
 
-    // buffered input timers
-    private float interactBufferTimer;
-    private float senseBufferTimer;
+    Rigidbody rb;
+    Animator animator;
+    CatControls controls;
+
+    Vector2 moveInput;
+    bool isRunning;
+    bool isGrounded;
+    float jumpCooldownTimer;
+    float interactBufferTimer;
+    float senseBufferTimer;
+    float footstepTimer;
+
+    bool inHouse;
+    bool inForest;
 
     void Awake()
     {
@@ -45,9 +61,13 @@ public class CatController : MonoBehaviour
 
         controls.Player.Jump.performed += _ => TryJump();
 
-        // IMPORTANT: buffer these so you don't have to hit the exact frame
         controls.Player.Interact.performed += _ => interactBufferTimer = inputBufferTime;
-        controls.Player.Sense.performed += _ => senseBufferTimer = inputBufferTime;
+
+        controls.Player.Sense.performed += _ =>
+        {
+            senseBufferTimer = inputBufferTime;
+            if (ScentClue.CurrentActiveTrail != null) PlaySniff();
+        };
 
         controls.Enable();
     }
@@ -63,11 +83,12 @@ public class CatController : MonoBehaviour
             groundCheck.SetParent(transform);
             groundCheck.localPosition = new Vector3(0f, 0.05f, 0f);
         }
+
+        if (!sniffSource) sniffSource = GetComponent<AudioSource>();
     }
 
     void Update()
     {
-        // tick down buffers
         if (interactBufferTimer > 0f) interactBufferTimer -= Time.deltaTime;
         if (senseBufferTimer > 0f) senseBufferTimer -= Time.deltaTime;
 
@@ -76,7 +97,6 @@ public class CatController : MonoBehaviour
         UpdateTimers();
     }
 
-    // Call these from other scripts (ScentClue / Sense reveal)
     public bool ConsumeInteractPressed()
     {
         if (interactBufferTimer <= 0f) return false;
@@ -91,16 +111,16 @@ public class CatController : MonoBehaviour
         return true;
     }
 
-    private void HandleMovement()
+    public void SetInHouse(bool value) { inHouse = value; }
+    public void SetInForest(bool value) { inForest = value; }
+
+    void HandleMovement()
     {
         Vector3 input = new Vector3(moveInput.x, 0f, moveInput.y);
         bool hasInput = input.sqrMagnitude > 0.01f;
 
-        float targetSpeed = isRunning ? runSpeed : walkSpeed;
-
-        Vector3 moveDir =
-            (transform.forward * input.z +
-             transform.right * input.x).normalized * targetSpeed;
+        Vector3 moveDir = (transform.forward * input.z + transform.right * input.x).normalized
+                        * (isRunning ? runSpeed : walkSpeed);
 
         Vector3 vel = rb.linearVelocity;
         vel.x = moveDir.x;
@@ -108,19 +128,28 @@ public class CatController : MonoBehaviour
         rb.linearVelocity = vel;
 
         if (hasInput && moveDir.sqrMagnitude > 0.0001f)
-        {
-            Quaternion targetRot = Quaternion.LookRotation(moveDir, Vector3.up);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, rotationSpeed * Time.deltaTime);
-        }
+            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(moveDir, Vector3.up), rotationSpeed * Time.deltaTime);
 
-        float horizontalSpeed = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z).magnitude;
-        animator.SetFloat("Speed", horizontalSpeed);
+        animator.SetFloat("Speed", new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z).magnitude);
+
+        if (moveInput.y > 0.1f && isGrounded)
+        {
+            footstepTimer -= Time.deltaTime;
+            if (footstepTimer <= 0f)
+            {
+                PlayFootstep();
+                footstepTimer = isRunning ? footstepInterval * 0.6f : footstepInterval;
+            }
+        }
+        else if (moveInput.y <= 0.1f)
+        {
+            footstepTimer = footstepInterval;
+        }
     }
 
-    private void TryJump()
+    void TryJump()
     {
-        if (!isGrounded) return;
-        if (jumpCooldownTimer > 0f) return;
+        if (!isGrounded || jumpCooldownTimer > 0f) return;
 
         Vector3 vel = rb.linearVelocity;
         vel.y = 0f;
@@ -128,24 +157,39 @@ public class CatController : MonoBehaviour
 
         rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
         jumpCooldownTimer = jumpCooldown;
-
         animator.SetTrigger("Stretch");
     }
 
-    private void UpdateGrounded()
+    void UpdateGrounded()
     {
         isGrounded = Physics.CheckSphere(groundCheck.position, groundCheckRadius, ~0);
         animator.SetBool("Grounded", isGrounded);
     }
 
-    private void UpdateTimers()
+    void UpdateTimers()
     {
-        if (jumpCooldownTimer > 0f)
-            jumpCooldownTimer -= Time.deltaTime;
+        if (jumpCooldownTimer > 0f) jumpCooldownTimer -= Time.deltaTime;
     }
 
-    void OnDestroy()
+    void PlayFootstep()
     {
-        controls.Disable();
+        AudioClip[] clips = null;
+
+        if (inHouse) clips = footstepClipsHard;
+        else if (inForest) clips = footstepClipsSoft;
+        else return;
+
+        if (footstepSource == null || clips == null || clips.Length == 0) return;
+        footstepSource.pitch = Random.Range(footstepPitchRange.x, footstepPitchRange.y);
+        footstepSource.PlayOneShot(clips[Random.Range(0, clips.Length)], footstepVolume);
     }
+
+    void PlaySniff()
+    {
+        if (!sniffSource || !sniffClip) return;
+        sniffSource.pitch = Random.Range(sniffPitchRange.x, sniffPitchRange.y);
+        sniffSource.PlayOneShot(sniffClip, sniffVolume);
+    }
+
+    void OnDestroy() => controls.Disable();
 }

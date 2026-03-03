@@ -9,7 +9,6 @@ public class SoftFlicker : MonoBehaviour
 
     void Update()
     {
-        float noise = Mathf.PerlinNoise(Time.time * speed, 0.0f);
-        lightSource.intensity = Mathf.Lerp(minIntensity, maxIntensity, noise);
+        lightSource.intensity = Mathf.Lerp(minIntensity, maxIntensity, Mathf.PerlinNoise(Time.time * speed, 0f));
     }
 }
