@@ -111,6 +111,23 @@ public class CatController : MonoBehaviour
         return true;
     }
 
+    public void FreezeMovement()
+    {
+        moveInput = Vector2.zero;
+        isRunning = false;
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
+        controls.Player.Disable();
+    }
+
+    public void UnfreezeMovement()
+    {
+        controls.Player.Enable();
+    }
+
     public void SetInHouse(bool value) { inHouse = value; }
     public void SetInForest(bool value) { inForest = value; }
 

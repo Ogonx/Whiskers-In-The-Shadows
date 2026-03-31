@@ -12,6 +12,10 @@ public class BagManEnemy : MonoBehaviour
     Transform target;
 
     void Reset() => animator = GetComponentInChildren<Animator>();
+    void Start()
+    {
+        if (animator) animator.SetBool(runBoolName, false);
+    }
 
     void Update()
     {

@@ -33,24 +33,20 @@ public class FreezeScreamEvent : MonoBehaviour
 
     IEnumerator FreezeScreamRoutine()
     {
-        catController.enabled = false;
+        // Freeze cat properly
+        catController.FreezeMovement();
 
-        Rigidbody rb = catController.GetComponent<Rigidbody>();
-        if (rb) rb.linearVelocity = Vector3.zero;
-
-        Animator animator = catController.GetComponent<Animator>();
-        if (animator) animator.SetFloat("Speed", 0f);
-
-        // disable follow camera so it stops fighting
+        // Freeze camera
         var followCam = gameplayCamera.GetComponent<PSXCameraFollow>();
-        if (followCam) followCam.enabled = false;
+        if (followCam) followCam.frozen = true;
 
+        // Play scream
         if (audioSource && screamClip)
             audioSource.PlayOneShot(screamClip, screamVolume);
 
+        // Zoom to target
         Vector3 startPos = gameplayCamera.transform.position;
         Quaternion startRot = gameplayCamera.transform.rotation;
-
         Vector3 targetPos = zoomTarget.position;
         Quaternion targetRot = zoomTarget.rotation;
 
@@ -66,6 +62,7 @@ public class FreezeScreamEvent : MonoBehaviour
 
         yield return new WaitForSeconds(holdTime);
 
+        // Zoom back
         t = 0f;
         while (t < zoomReturnTime)
         {
@@ -76,9 +73,8 @@ public class FreezeScreamEvent : MonoBehaviour
             yield return null;
         }
 
-        // re-enable follow camera
-        if (followCam) followCam.enabled = true;
-
-        catController.enabled = true;
+        // Unfreeze camera and cat
+        if (followCam) followCam.frozen = false;
+        catController.UnfreezeMovement();
     }
 }

@@ -17,6 +17,14 @@ public class PSXCameraFollow : MonoBehaviour
     public float collisionPushSpeed = 20f;
     public float collisionReturnSpeed = 10f;
 
+    [HideInInspector] public bool frontMode = false;
+    [HideInInspector] public bool frozen = false;
+    [HideInInspector] public bool blendingBack = false;
+    [HideInInspector] public float blendBackTimer = 0f;
+    [HideInInspector] public float blendBackDuration = 1.5f;
+    [HideInInspector] public Quaternion blendStartRot;
+    [HideInInspector] public Vector3 blendStartPos;
+
     float currentDistance;
 
     void Start()
@@ -26,7 +34,16 @@ public class PSXCameraFollow : MonoBehaviour
 
     void LateUpdate()
     {
-        if (target == null) return;
+        if (target == null || frozen) return;
+
+        if (frontMode)
+        {
+            Vector3 frontPos = target.position + target.forward * 6f + Vector3.up * 2.5f;
+            transform.position = Vector3.Lerp(transform.position, frontPos, followSpeed * 2f * Time.deltaTime);
+            Vector3 lookDir = (target.position + Vector3.up * 1f) - transform.position;
+            transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.LookRotation(lookDir), rotateSpeed * 2f * Time.deltaTime);
+            return;
+        }
 
         Vector3 desiredPos = target.position - target.forward * distance + Vector3.up * height;
         Vector3 origin = target.position + Vector3.up * (height * 0.5f);
@@ -37,7 +54,6 @@ public class PSXCameraFollow : MonoBehaviour
         {
             Vector3 dir = toDesired / desiredDist;
             float targetDist = distance;
-
             if (Physics.SphereCast(origin, sphereRadius, dir, out RaycastHit hit, desiredDist, collisionMask, QueryTriggerInteraction.Ignore))
             {
                 float hitDist = Mathf.Max(minDistance, hit.distance - wallOffset);
@@ -53,8 +69,17 @@ public class PSXCameraFollow : MonoBehaviour
 
         Vector3 finalPos = target.position - target.forward * currentDistance + Vector3.up * height;
 
-        transform.position = Vector3.Lerp(transform.position, finalPos, followSpeed * Time.deltaTime);
+        if (blendingBack)
+        {
+            blendBackTimer += Time.deltaTime;
+            float t = Mathf.SmoothStep(0f, 1f, blendBackTimer / blendBackDuration);
+            transform.position = Vector3.Lerp(blendStartPos, finalPos, t);
+            transform.rotation = Quaternion.Slerp(blendStartRot, Quaternion.LookRotation(target.position - transform.position), t);
+            if (blendBackTimer >= blendBackDuration) blendingBack = false;
+            return;
+        }
 
+        transform.position = Vector3.Lerp(transform.position, finalPos, followSpeed * Time.deltaTime);
         Quaternion lookRot = Quaternion.LookRotation(target.position - transform.position);
         transform.rotation = Quaternion.Lerp(transform.rotation, lookRot, rotateSpeed * Time.deltaTime);
     }
