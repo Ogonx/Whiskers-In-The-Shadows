@@ -225,7 +225,8 @@ public class MenuUIController : MonoBehaviour
         if (state == State.Main)
         {
             if (mainIndex == 0) StartCoroutine(NewGameFlow());
-            else { PlayConfirm(); SetState(State.Options); }
+            else if (mainIndex == 1) { PlayConfirm(); SetState(State.Options); }
+            else if (mainIndex == 2) { PlayConfirm(); Application.Quit(); }
         }
         else if (state == State.Options)
         {

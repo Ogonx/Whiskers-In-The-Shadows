@@ -14,10 +14,10 @@ OcclusionCullingSettings:
 RenderSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 10
-  m_Fog: 0
+  m_Fog: 1
   m_FogColor: {r: 0.31132078, g: 0.28929338, b: 0.28929338, a: 1}
   m_FogMode: 3
-  m_FogDensity: 0.029
+  m_FogDensity: 0.05
   m_LinearFogStart: 0
   m_LinearFogEnd: 300
   m_AmbientSkyColor: {r: 0.19312921, g: 0.21064833, b: 0.26415092, a: 1}
@@ -25546,11 +25546,11 @@ BoxCollider:
     m_Bits: 0
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
-  m_ProvidesContacts: 0
+  m_ProvidesContacts: 1
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Size: {x: 1, y: 0.35493487, z: 1}
+  m_Center: {x: 6.190943e-11, y: -0.32253385, z: -6.046313e-10}
 --- !u!23 &410095063
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -25615,13 +25615,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 410095061}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.3435239, y: 0.0459926, z: 0.016043773, w: 0.9378799}
-  m_LocalPosition: {x: 216.737, y: 1.239, z: 758.098}
-  m_LocalScale: {x: 4.1531, y: 0.16314, z: 5.1236}
+  m_LocalRotation: {x: -0.2771547, y: 0.04808613, z: 0.019900981, w: 0.95941496}
+  m_LocalPosition: {x: 216.69, y: 1.53, z: 757.66}
+  m_LocalScale: {x: 4.1531, y: 0.23779681, z: 5.6574793}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: -40.229, y: 5.656, z: -0.113}
+  m_LocalEulerAnglesHint: {x: -32.258, y: 5.513, z: 0.781}
 --- !u!1 &411169300 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: -6526458530136317231, guid: 6d1f23e6a197c7246b0e997e43b29360, type: 3}
@@ -76184,7 +76184,7 @@ AudioSource:
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 8300000, guid: 3b870fe076a27364b91fd01416787c98, type: 3}
   m_PlayOnAwake: 1
-  m_Volume: 1
+  m_Volume: 0.742
   m_Pitch: 0.81
   Loop: 1
   Mute: 0
@@ -108135,7 +108135,7 @@ AudioSource:
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 8300000, guid: 32d4dd7a317db774e98653f4ebfc01b3, type: 3}
   m_PlayOnAwake: 1
-  m_Volume: 1
+  m_Volume: 0.805
   m_Pitch: 0.81
   Loop: 1
   Mute: 0

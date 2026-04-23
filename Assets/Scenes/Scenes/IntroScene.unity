@@ -6660,12 +6660,24 @@ PrefabInstance:
     m_TransformParent: {fileID: 1889420923}
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: 905bc3cda82c7e34cad6778244991047, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.3
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 905bc3cda82c7e34cad6778244991047, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.3
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 905bc3cda82c7e34cad6778244991047, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.3
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 905bc3cda82c7e34cad6778244991047, type: 3}
       propertyPath: m_LocalPosition.x
       value: -5.4268646
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 905bc3cda82c7e34cad6778244991047, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.16000009
+      value: 0.05
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 905bc3cda82c7e34cad6778244991047, type: 3}
       propertyPath: m_LocalPosition.z
@@ -9666,6 +9678,7 @@ MonoBehaviour:
   interactRange: 4
   oneTimeOnly: 1
   trailToUnlock: {fileID: 381191973}
+  particleToHide: {fileID: 0}
   promptRoot: {fileID: 466146560}
   promptTMP: {fileID: 1278282919}
   promptText: HOLD E TO SMELL
@@ -16574,7 +16587,7 @@ AudioSource:
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 0}
   m_PlayOnAwake: 1
-  m_Volume: 1
+  m_Volume: 0.818
   m_Pitch: 1
   Loop: 0
   Mute: 0
@@ -17146,6 +17159,9 @@ MonoBehaviour:
   height: 2
   followSpeed: 3
   rotateSpeed: 5
+  chaseTarget: {fileID: 0}
+  chaseDistance: 6
+  chaseHeight: 2.5
   collisionMask:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -17154,6 +17170,13 @@ MonoBehaviour:
   minDistance: 0.8
   collisionPushSpeed: 20
   collisionReturnSpeed: 10
+  frontMode: 0
+  frozen: 0
+  blendingBack: 0
+  blendBackTimer: 0
+  blendBackDuration: 1.5
+  blendStartRot: {x: 0, y: 0, z: 0, w: 0}
+  blendStartPos: {x: 0, y: 0, z: 0}
 --- !u!1 &954151962
 GameObject:
   m_ObjectHideFlags: 0
@@ -18750,6 +18773,12 @@ MonoBehaviour:
   sniffClip: {fileID: 0}
   sniffVolume: 0.7
   sniffPitchRange: {x: 0.92, y: 1.05}
+  footstepSource: {fileID: 0}
+  footstepClipsHard: []
+  footstepClipsSoft: []
+  footstepInterval: 0.5
+  footstepPitchRange: {x: 0.9, y: 1.1}
+  footstepVolume: 0.8
 --- !u!95 &1057243251
 Animator:
   serializedVersion: 7
@@ -20170,6 +20199,7 @@ MonoBehaviour:
   interactRange: 4
   oneTimeOnly: 1
   trailToUnlock: {fileID: 928181954}
+  particleToHide: {fileID: 0}
   promptRoot: {fileID: 1575486111}
   promptTMP: {fileID: 1613169767}
   promptText: HOLD E TO SMELL
@@ -20450,8 +20480,8 @@ Transform:
   m_GameObject: {fileID: 1151090602}
   serializedVersion: 2
   m_LocalRotation: {x: 0.53353304, y: 0.46405017, z: 0.46405008, w: -0.533533}
-  m_LocalPosition: {x: -0.215, y: -6.275, z: 8.366}
-  m_LocalScale: {x: 170, y: 170, z: 170}
+  m_LocalPosition: {x: 0.27, y: -6.275, z: 8.3}
+  m_LocalScale: {x: 130, y: 130, z: 130}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1006874428}
@@ -29249,7 +29279,7 @@ AudioSource:
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 0}
   m_PlayOnAwake: 1
-  m_Volume: 1
+  m_Volume: 0.811
   m_Pitch: 1
   Loop: 0
   Mute: 0
