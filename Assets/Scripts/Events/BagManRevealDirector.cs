@@ -39,6 +39,26 @@ public class BagManRevealDirector : MonoBehaviour
         ChaseActive = false;
     }
 
+    public void ResetTrigger()
+    {
+        StopAllCoroutines();
+        triggered = false;
+        ChaseActive = false;
+
+        if (scaryMusicSource) scaryMusicSource.Stop();
+        if (footstepSource) footstepSource.Stop();
+
+        mainCamera.fieldOfView = originalFOV;
+
+        if (cameraFollow)
+        {
+            cameraFollow.frozen = false;
+            cameraFollow.frontMode = false;
+            cameraFollow.blendingBack = false;
+            cameraFollow.chaseTarget = null;
+        }
+    }
+
     void OnTriggerEnter(Collider other)
     {
         if (triggered) return;
@@ -49,35 +69,27 @@ public class BagManRevealDirector : MonoBehaviour
 
     IEnumerator RevealSequence()
     {
-        // 1 - Freeze cat
         if (catController) catController.FreezeMovement();
-
-        // 2 - Freeze camera
         if (cameraFollow) cameraFollow.frozen = true;
 
-        // 3 - Fade wind out
         StartCoroutine(FadeAudio(windAudio, 0f, windFadeDuration));
 
-        // 4 - Zoom and rotate camera toward BagMan
         yield return StartCoroutine(ZoomOntoBagMan());
 
-        // 5 - Hold on BagMan
         yield return new WaitForSeconds(pauseBeforeChase);
 
-        // 6 - Unfreeze camera, switch to front mode
-        if (cameraFollow)
-        {
-            cameraFollow.frozen = false;
-            cameraFollow.frontMode = true;
-        }
-
-        // 7 - Restore FOV
         yield return StartCoroutine(SetFOV(mainCamera.fieldOfView, originalFOV, 0.4f));
 
-        // 8 - Unfreeze cat
+        if (cameraFollow)
+        {
+            cameraFollow.chaseTarget = bagManTransform;
+            cameraFollow.frozen = false;
+            cameraFollow.frontMode = true;
+            cameraFollow.blendingBack = false;
+        }
+
         if (catController) catController.UnfreezeMovement();
 
-        // 9 - Play scary music
         if (scaryMusicSource && scaryMusicClip)
         {
             scaryMusicSource.clip = scaryMusicClip;
@@ -85,10 +97,8 @@ public class BagManRevealDirector : MonoBehaviour
             scaryMusicSource.Play();
         }
 
-        // 10 - BagMan chases cat
         if (bagManEnemy) bagManEnemy.RushToPoint(catController.transform);
 
-        // 11 - Play footsteps
         if (footstepSource && footstepClip)
         {
             footstepSource.clip = footstepClip;
@@ -96,7 +106,6 @@ public class BagManRevealDirector : MonoBehaviour
             footstepSource.Play();
         }
 
-        // 12 - Activate chase flag
         ChaseActive = true;
     }
 
@@ -151,5 +160,6 @@ public class BagManRevealDirector : MonoBehaviour
             yield return null;
         }
         source.volume = targetVolume;
+        if (targetVolume == 0f) source.Stop();
     }
 }

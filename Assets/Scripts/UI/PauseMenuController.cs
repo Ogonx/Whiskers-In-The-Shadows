@@ -8,7 +8,7 @@ using UnityEngine.UI;
 
 public class PauseMenuController : MonoBehaviour
 {
-    enum State { Main, Options, Audio }
+    enum State { Main, Options, Audio, Controls }
     State state = State.Main;
 
     [Header("Pause Root")]
@@ -18,6 +18,7 @@ public class PauseMenuController : MonoBehaviour
     public GameObject mainChoicesPanel;
     public GameObject optionsPanel;
     public GameObject audioPanel;
+    public GameObject controlsPanel;
 
     [Header("Main Menu Items")]
     public TextMeshProUGUI[] mainGlowItems;
@@ -88,12 +89,20 @@ public class PauseMenuController : MonoBehaviour
             if (state == State.Audio && audioEditing) { audioEditing = false; ApplyAudioVisuals(); return; }
             if (state == State.Audio) { SetState(State.Options); return; }
             if (state == State.Options) { SetState(State.Main); return; }
+            if (state == State.Controls) { SetState(State.Options); return; }
 
             Resume();
             return;
         }
 
         if (!paused) return;
+
+        if (state == State.Controls)
+        {
+            if (WasPressed(kb.enterKey) || WasPressed(kb.spaceKey) || WasPressed(kb.backspaceKey))
+                SetState(State.Options);
+            return;
+        }
 
         if (state == State.Audio)
         {
@@ -216,7 +225,7 @@ public class PauseMenuController : MonoBehaviour
 
         if (state == State.Options)
         {
-            if (optionsIndex == 0) return;
+            if (optionsIndex == 0) { SetState(State.Controls); return; }
             if (optionsIndex == 1) { SetState(State.Audio); return; }
             if (optionsIndex == 2) { SetState(State.Main); return; }
         }
@@ -245,6 +254,7 @@ public class PauseMenuController : MonoBehaviour
         if (mainChoicesPanel != null) mainChoicesPanel.SetActive(state == State.Main);
         if (optionsPanel != null) optionsPanel.SetActive(state == State.Options);
         if (audioPanel != null) audioPanel.SetActive(state == State.Audio);
+        if (controlsPanel != null) controlsPanel.SetActive(state == State.Controls);
 
         ApplyVisuals();
         ApplyAudioVisuals();

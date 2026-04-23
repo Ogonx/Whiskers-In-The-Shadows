@@ -15,6 +15,7 @@ public class FreezeScreamEvent : MonoBehaviour
     [Header("Camera")]
     public Transform zoomTarget;
     public float zoomOutTime = 1.5f;
+    public float screamAfter = 1f;
     public float holdTime = 2.5f;
     public float zoomReturnTime = 1.0f;
 
@@ -33,23 +34,17 @@ public class FreezeScreamEvent : MonoBehaviour
 
     IEnumerator FreezeScreamRoutine()
     {
-        // Freeze cat properly
         catController.FreezeMovement();
 
-        // Freeze camera
         var followCam = gameplayCamera.GetComponent<PSXCameraFollow>();
         if (followCam) followCam.frozen = true;
 
-        // Play scream
-        if (audioSource && screamClip)
-            audioSource.PlayOneShot(screamClip, screamVolume);
-
-        // Zoom to target
         Vector3 startPos = gameplayCamera.transform.position;
         Quaternion startRot = gameplayCamera.transform.rotation;
         Vector3 targetPos = zoomTarget.position;
         Quaternion targetRot = zoomTarget.rotation;
 
+        bool screamPlayed = false;
         float t = 0f;
         while (t < zoomOutTime)
         {
@@ -57,12 +52,19 @@ public class FreezeScreamEvent : MonoBehaviour
             float k = Mathf.SmoothStep(0f, 1f, t / zoomOutTime);
             gameplayCamera.transform.position = Vector3.Lerp(startPos, targetPos, k);
             gameplayCamera.transform.rotation = Quaternion.Slerp(startRot, targetRot, k);
+
+            if (!screamPlayed && t >= screamAfter)
+            {
+                screamPlayed = true;
+                if (audioSource && screamClip)
+                    audioSource.PlayOneShot(screamClip, screamVolume);
+            }
+
             yield return null;
         }
 
         yield return new WaitForSeconds(holdTime);
 
-        // Zoom back
         t = 0f;
         while (t < zoomReturnTime)
         {
@@ -73,7 +75,6 @@ public class FreezeScreamEvent : MonoBehaviour
             yield return null;
         }
 
-        // Unfreeze camera and cat
         if (followCam) followCam.frozen = false;
         catController.UnfreezeMovement();
     }

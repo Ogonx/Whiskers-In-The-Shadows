@@ -1,5 +1,4 @@
 using UnityEngine;
-
 public class PSXCameraFollow : MonoBehaviour
 {
     [Header("Follow")]
@@ -8,6 +7,11 @@ public class PSXCameraFollow : MonoBehaviour
     public float height = 2f;
     public float followSpeed = 5f;
     public float rotateSpeed = 8f;
+
+    [Header("Chase Mode")]
+    public Transform chaseTarget;
+    public float chaseDistance = 6f;
+    public float chaseHeight = 2.5f;
 
     [Header("Collision")]
     public LayerMask collisionMask = ~0;
@@ -38,10 +42,19 @@ public class PSXCameraFollow : MonoBehaviour
 
         if (frontMode)
         {
-            Vector3 frontPos = target.position + target.forward * 6f + Vector3.up * 2.5f;
-            transform.position = Vector3.Lerp(transform.position, frontPos, followSpeed * 2f * Time.deltaTime);
+            if (chaseTarget != null)
+            {
+                Vector3 dirFromBagMan = (target.position - chaseTarget.position);
+                dirFromBagMan.y = 0f;
+                dirFromBagMan.Normalize();
+
+                Vector3 frontPos = target.position + dirFromBagMan * chaseDistance + Vector3.up * chaseHeight;
+                transform.position = Vector3.Lerp(transform.position, frontPos, followSpeed * Time.deltaTime);
+            }
+
             Vector3 lookDir = (target.position + Vector3.up * 1f) - transform.position;
-            transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.LookRotation(lookDir), rotateSpeed * 2f * Time.deltaTime);
+            if (lookDir.sqrMagnitude > 0.001f)
+                transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.LookRotation(lookDir), rotateSpeed * 2f * Time.deltaTime);
             return;
         }
 
@@ -54,6 +67,7 @@ public class PSXCameraFollow : MonoBehaviour
         {
             Vector3 dir = toDesired / desiredDist;
             float targetDist = distance;
+
             if (Physics.SphereCast(origin, sphereRadius, dir, out RaycastHit hit, desiredDist, collisionMask, QueryTriggerInteraction.Ignore))
             {
                 float hitDist = Mathf.Max(minDistance, hit.distance - wallOffset);

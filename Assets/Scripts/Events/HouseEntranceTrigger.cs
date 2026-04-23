@@ -7,12 +7,14 @@ public class HouseEntranceTrigger : MonoBehaviour
     public AudioSource groanSource;
     public AudioSource windSource;
     public float windFadeDuration = 2f;
+    public GameObject mansionExitBlocker;
 
     bool triggered = false;
 
     void Start()
     {
         if (groanSource) groanSource.enabled = false;
+        if (mansionExitBlocker) mansionExitBlocker.SetActive(false);
     }
 
     void OnTriggerEnter(Collider other)
@@ -26,6 +28,7 @@ public class HouseEntranceTrigger : MonoBehaviour
             groanSource.enabled = true;
             groanSource.Play();
         }
+        if (mansionExitBlocker) mansionExitBlocker.SetActive(true);
         StartCoroutine(FadeOutWind());
     }
 

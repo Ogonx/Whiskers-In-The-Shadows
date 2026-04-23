@@ -12,6 +12,7 @@ public class BagManEnemy : MonoBehaviour
     Transform target;
 
     void Reset() => animator = GetComponentInChildren<Animator>();
+
     void Start()
     {
         if (animator) animator.SetBool(runBoolName, false);
@@ -20,16 +21,13 @@ public class BagManEnemy : MonoBehaviour
     void Update()
     {
         if (!rushing || target == null) return;
-
         Vector3 dir = target.position - transform.position;
         dir.y = 0f;
-
         if (dir.sqrMagnitude < 0.1f)
         {
             StopRush();
             return;
         }
-
         Quaternion look = Quaternion.LookRotation(dir.normalized);
         transform.rotation = Quaternion.Slerp(transform.rotation, look, Time.deltaTime * turnSpeed);
         transform.position += transform.forward * (runSpeed * Time.deltaTime);
@@ -47,6 +45,10 @@ public class BagManEnemy : MonoBehaviour
         rushing = false;
         target = null;
         if (animator) animator.SetBool(runBoolName, false);
+    }
+
+    public void Hide()
+    {
         gameObject.SetActive(false);
     }
 }

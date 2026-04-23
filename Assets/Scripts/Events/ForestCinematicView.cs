@@ -26,6 +26,7 @@ public class ForestCinematicView : MonoBehaviour
     public float riseDuration = 4f;
 
     bool triggered = false;
+    Coroutine zoomRoutine;
 
     void OnTriggerEnter(Collider other)
     {
@@ -35,19 +36,24 @@ public class ForestCinematicView : MonoBehaviour
         StartCoroutine(ReturnSequence());
     }
 
+    public void StopTracking()
+    {
+        if (zoomRoutine != null)
+        {
+            StopCoroutine(zoomRoutine);
+            zoomRoutine = null;
+        }
+    }
+
     IEnumerator ReturnSequence()
     {
-        // 1 - Freeze player input
         catController.FreezeMovement();
 
-        // 2 - Fade wind out and music in simultaneously
         StartCoroutine(FadeAudio(windAudio, 0f, windFadeDuration));
         StartCoroutine(FadeInMusic());
 
-        // 3 - Rise camera up
-        StartCoroutine(ZoomOut());
+        zoomRoutine = StartCoroutine(ZoomOut());
 
-        // 4 - Walk cat along waypoints automatically
         yield return StartCoroutine(WalkCatToHouse());
     }
 
@@ -76,8 +82,7 @@ public class ForestCinematicView : MonoBehaviour
                     catController.transform.rotation = Quaternion.Slerp(
                         catController.transform.rotation,
                         Quaternion.LookRotation(dir),
-                        Time.deltaTime * 8f
-                    );
+                        Time.deltaTime * 8f);
 
                 if (animator) animator.SetFloat("Speed", walkSpeed);
 
@@ -99,14 +104,12 @@ public class ForestCinematicView : MonoBehaviour
             elapsed += Time.deltaTime;
             float t = Mathf.SmoothStep(0f, 1f, elapsed / riseDuration);
 
-            // Rise high above and slightly behind cat
             Vector3 targetPos = catController.transform.position
                 - catController.transform.forward * risePullBack
                 + Vector3.up * riseHeight;
 
             mainCamera.transform.position = Vector3.Lerp(mainCamera.transform.position, targetPos, t);
 
-            // Look slightly forward in the direction cat is walking, not straight down
             Vector3 lookTarget = catController.transform.position
                 + catController.transform.forward * 10f
                 + Vector3.up * 1f;
@@ -115,13 +118,11 @@ public class ForestCinematicView : MonoBehaviour
                 mainCamera.transform.rotation = Quaternion.Slerp(
                     mainCamera.transform.rotation,
                     Quaternion.LookRotation(lookDir),
-                    Time.deltaTime * 2f
-                );
+                    Time.deltaTime * 2f);
 
             yield return null;
         }
 
-        // Keep tracking after rise
         while (true)
         {
             Vector3 followPos = catController.transform.position
@@ -139,8 +140,7 @@ public class ForestCinematicView : MonoBehaviour
                 mainCamera.transform.rotation = Quaternion.Slerp(
                     mainCamera.transform.rotation,
                     Quaternion.LookRotation(lookDir),
-                    Time.deltaTime * 2f
-                );
+                    Time.deltaTime * 2f);
 
             yield return null;
         }

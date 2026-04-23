@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using TMPro;
 
 public class BedroomDiscoveryTrigger : MonoBehaviour
 {
@@ -8,7 +9,16 @@ public class BedroomDiscoveryTrigger : MonoBehaviour
     public PSXCameraFollow cameraFollow;
     public Camera mainCamera;
     public Transform ownerTransform;
-    public BagManHousePatrol bagManPatrol;
+    public Transform cameraZoomTarget;
+    public GameObject backDoorBlocker;
+    public Transform cameraDiscoveryPosition;
+
+    [Header("Dialogue")]
+    public GameObject dialogueCanvas;
+    public TextMeshProUGUI dialogueText;
+    public AudioSource mumbleSource;
+    public AudioClip mumbleClip;
+    public float timeBetweenLines = 2.5f;
 
     [Header("Audio")]
     public AudioSource groanSource;
@@ -18,13 +28,32 @@ public class BedroomDiscoveryTrigger : MonoBehaviour
     public AudioClip atmosphericMusicClip;
     [Range(0f, 1f)] public float atmosphericMusicVolume = 0.5f;
     public float musicFadeInDuration = 3f;
+    public AudioSource deathSoundSource;
+    public AudioClip deathSoundClip;
 
-    [Header("Camera Zoom")]
+    [Header("Camera")]
+    public float transitionDuration = 1.5f;
     public float zoomDuration = 2f;
-    public float zoomFOV = 40f;
-    public float holdDuration = 3f;
+    public float zoomFOV = 20f;
 
     bool triggered = false;
+
+    string[] dialogueLines = new string[]
+    {
+        "You found me...",
+        "its too late though.",
+        "I'm so tired...",
+        "go home.",
+        "Please...",
+        "just go home."
+    };
+
+    void Start()
+    {
+        if (backDoorBlocker) backDoorBlocker.SetActive(true);
+        if (dialogueCanvas) dialogueCanvas.SetActive(false);
+        if (dialogueText) dialogueText.text = "";
+    }
 
     void OnTriggerEnter(Collider other)
     {
@@ -38,14 +67,11 @@ public class BedroomDiscoveryTrigger : MonoBehaviour
     {
         if (groanSource) groanSource.Stop();
 
-        if (bagManPatrol)
-        {
-            bagManPatrol.isWalking = false;
-            bagManPatrol.StopAllCoroutines();
-        }
-
         catController.FreezeMovement();
         if (cameraFollow) cameraFollow.frozen = true;
+
+        if (cameraDiscoveryPosition != null)
+            yield return StartCoroutine(TransitionToDiscoveryPosition());
 
         if (catMeowSource && catMeowClip)
         {
@@ -65,7 +91,25 @@ public class BedroomDiscoveryTrigger : MonoBehaviour
 
         yield return StartCoroutine(ZoomOnOwner());
 
-        yield return new WaitForSeconds(holdDuration);
+        if (mumbleSource && mumbleClip)
+        {
+            mumbleSource.clip = mumbleClip;
+            mumbleSource.loop = true;
+            mumbleSource.Play();
+        }
+
+        if (dialogueCanvas) dialogueCanvas.SetActive(true);
+
+        yield return StartCoroutine(ShowDialogue());
+
+        if (mumbleSource) mumbleSource.Stop();
+
+        if (deathSoundSource && deathSoundClip)
+            deathSoundSource.PlayOneShot(deathSoundClip);
+
+        yield return new WaitForSeconds(deathSoundClip != null ? deathSoundClip.length : 1f);
+
+        if (dialogueCanvas) dialogueCanvas.SetActive(false);
 
         yield return StartCoroutine(ResetFOV());
 
@@ -81,23 +125,43 @@ public class BedroomDiscoveryTrigger : MonoBehaviour
 
         catController.UnfreezeMovement();
 
-        if (bagManPatrol) bagManPatrol.StartPatrol();
+        if (backDoorBlocker) backDoorBlocker.SetActive(false);
 
         yield return StartCoroutine(FadeInMusic());
 
         gameObject.SetActive(false);
     }
 
+    IEnumerator TransitionToDiscoveryPosition()
+    {
+        float elapsed = 0f;
+        Vector3 startPos = mainCamera.transform.position;
+        Quaternion startRot = mainCamera.transform.rotation;
+
+        while (elapsed < transitionDuration)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.SmoothStep(0f, 1f, elapsed / transitionDuration);
+            mainCamera.transform.position = Vector3.Lerp(startPos, cameraDiscoveryPosition.position, t);
+            mainCamera.transform.rotation = Quaternion.Slerp(startRot, cameraDiscoveryPosition.rotation, t);
+            yield return null;
+        }
+
+        mainCamera.transform.position = cameraDiscoveryPosition.position;
+        mainCamera.transform.rotation = cameraDiscoveryPosition.rotation;
+    }
+
     IEnumerator ZoomOnOwner()
     {
-        if (ownerTransform == null) yield break;
-
         float elapsed = 0f;
         float startFOV = mainCamera.fieldOfView;
         Quaternion startRot = mainCamera.transform.rotation;
 
-        Vector3 dirToOwner = ownerTransform.position - mainCamera.transform.position;
-        Quaternion targetRot = Quaternion.LookRotation(dirToOwner.normalized);
+        Transform zoomTarget = cameraZoomTarget != null ? cameraZoomTarget : ownerTransform;
+        if (zoomTarget == null) yield break;
+
+        Vector3 dirToTarget = zoomTarget.position - mainCamera.transform.position;
+        Quaternion targetRot = Quaternion.LookRotation(dirToTarget.normalized);
 
         while (elapsed < zoomDuration)
         {
@@ -110,6 +174,21 @@ public class BedroomDiscoveryTrigger : MonoBehaviour
 
         mainCamera.fieldOfView = zoomFOV;
         mainCamera.transform.rotation = targetRot;
+    }
+
+    IEnumerator ShowDialogue()
+    {
+        foreach (string line in dialogueLines)
+        {
+            if (dialogueText) dialogueText.text = "";
+            foreach (char letter in line)
+            {
+                if (dialogueText) dialogueText.text += letter;
+                yield return new WaitForSeconds(0.08f);
+            }
+            yield return new WaitForSeconds(timeBetweenLines);
+        }
+        if (dialogueText) dialogueText.text = "";
     }
 
     IEnumerator ResetFOV()

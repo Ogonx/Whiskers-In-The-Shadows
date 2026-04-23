@@ -8,13 +8,14 @@ using UnityEngine.UI;
 
 public class MenuUIController : MonoBehaviour
 {
-    enum State { Main, Options, Audio }
+    enum State { Main, Options, Audio, Controls }
     State state = State.Main;
 
     [Header("Panels")]
     public GameObject mainChoicesPanel;
     public GameObject optionsPanel;
     public GameObject audioPanel;
+    public GameObject controlsPanel;
 
     [Header("Glow Items")]
     public TextMeshProUGUI[] mainGlowItems;
@@ -109,9 +110,7 @@ public class MenuUIController : MonoBehaviour
     }
 
     void OnSliderChanged(float v) { ApplyVolume(v); SaveVolume(v); }
-
     void ApplyVolume(float v) => AudioListener.volume = Mathf.Clamp01(v);
-
     void SaveVolume(float v)
     {
         PlayerPrefs.SetFloat(VolumePrefKey, Mathf.Clamp01(v));
@@ -130,6 +129,14 @@ public class MenuUIController : MonoBehaviour
             if (state == State.Audio && audioEditing) { audioEditing = false; holdDir = 0; PlayConfirm(); ApplyAudioVisuals(); return; }
             if (state == State.Audio) { SetState(State.Options); return; }
             if (state == State.Options) { SetState(State.Main); return; }
+            if (state == State.Controls) { SetState(State.Options); return; }
+        }
+
+        if (state == State.Controls)
+        {
+            if (WasPressed(kb.enterKey) || WasPressed(kb.spaceKey) || WasPressed(kb.backspaceKey))
+                SetState(State.Options);
+            return;
         }
 
         if (state == State.Audio)
@@ -223,7 +230,8 @@ public class MenuUIController : MonoBehaviour
         else if (state == State.Options)
         {
             PlayConfirm();
-            if (optionsIndex == 1) SetState(State.Audio);
+            if (optionsIndex == 0) SetState(State.Controls);
+            else if (optionsIndex == 1) SetState(State.Audio);
             else if (optionsIndex == 2) SetState(State.Main);
         }
     }
@@ -284,6 +292,7 @@ public class MenuUIController : MonoBehaviour
         if (mainChoicesPanel != null) mainChoicesPanel.SetActive(state == State.Main);
         if (optionsPanel != null) optionsPanel.SetActive(state == State.Options);
         if (audioPanel != null) audioPanel.SetActive(state == State.Audio);
+        if (controlsPanel != null) controlsPanel.SetActive(state == State.Controls);
 
         if (state != State.Audio) { audioEditing = false; holdDir = 0; }
 

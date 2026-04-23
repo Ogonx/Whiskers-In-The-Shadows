@@ -13,53 +13,55 @@ public class BagManEscapeTrigger : MonoBehaviour
     [Header("Audio")]
     public AudioSource scaryMusicSource;
     public AudioSource footstepSource;
+    public AudioSource windAudio;
     public float musicFadeDuration = 2f;
+    public float windFadeInDuration = 2f;
 
     [Header("Timing")]
     public float watchBagManDuration = 2f;
 
+    bool triggered = false;
+
     void OnTriggerEnter(Collider other)
     {
+        if (triggered) return;
         if (!BagManRevealDirector.ChaseActive) return;
         if (!other.CompareTag("Player")) return;
-        BagManRevealDirector.ChaseActive = false;
+        triggered = true;
         StartCoroutine(EndChase());
     }
 
     IEnumerator EndChase()
     {
-        // 1 - Freeze cat and camera
         if (catController) catController.FreezeMovement();
         if (cameraFollow) cameraFollow.frozen = true;
 
-        // 2 - Stop footsteps
         if (footstepSource) footstepSource.Stop();
 
-        // 3 - BagMan runs to forest exit point
         if (bagManEnemy && forestExitPoint)
             bagManEnemy.RushToPoint(forestExitPoint);
 
-        // 4 - Watch BagMan run into forest
         yield return new WaitForSeconds(watchBagManDuration);
 
-        // 5 - BagMan vanishes
-        if (bagManEnemy) bagManEnemy.gameObject.SetActive(false);
+        if (bagManEnemy) bagManEnemy.Hide();
 
-        // 6 - Smooth camera blend back behind cat
         if (cameraFollow)
         {
             cameraFollow.blendStartPos = mainCamera.transform.position;
             cameraFollow.blendStartRot = mainCamera.transform.rotation;
             cameraFollow.blendBackTimer = 0f;
+            cameraFollow.blendBackDuration = 1.5f;
             cameraFollow.blendingBack = true;
             cameraFollow.frontMode = false;
             cameraFollow.frozen = false;
         }
 
-        // 7 - Unfreeze cat
         if (catController) catController.UnfreezeMovement();
 
-        // 8 - Fade music and wait for it to finish
+        BagManRevealDirector.ChaseActive = false;
+
+        StartCoroutine(FadeWindIn());
+
         yield return StartCoroutine(FadeMusic());
 
         gameObject.SetActive(false);
@@ -76,6 +78,21 @@ public class BagManEscapeTrigger : MonoBehaviour
             scaryMusicSource.volume = Mathf.Lerp(start, 0f, elapsed / musicFadeDuration);
             yield return null;
         }
+        scaryMusicSource.volume = 0f;
         scaryMusicSource.Stop();
+    }
+
+    IEnumerator FadeWindIn()
+    {
+        if (windAudio == null) yield break;
+        if (!windAudio.isPlaying) windAudio.Play();
+        float elapsed = 0f;
+        while (elapsed < windFadeInDuration)
+        {
+            elapsed += Time.deltaTime;
+            windAudio.volume = Mathf.Lerp(0f, 1f, elapsed / windFadeInDuration);
+            yield return null;
+        }
+        windAudio.volume = 1f;
     }
 }

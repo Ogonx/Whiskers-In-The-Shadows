@@ -55,6 +55,9 @@ public class WakeStartDirector : MonoBehaviour
     [SerializeField] MonoBehaviour[] scriptsToEnable;
     [SerializeField] GameObject[] objectsToEnable;
 
+    [Header("Tutorial")]
+    [SerializeField] TutorialPromptUI tutorialPrompt;
+
     float lidMove;
 
     void Start()
@@ -126,6 +129,8 @@ public class WakeStartDirector : MonoBehaviour
 
         SetActive(objectsToEnable, true);
         SetEnabled(scriptsToEnable, true);
+
+        if (tutorialPrompt) tutorialPrompt.Show();
     }
 
     IEnumerator DoorImpactShake(Transform cam, float dur)

@@ -5,7 +5,7 @@ using UnityEngine.UI;
 public class ScentClue : MonoBehaviour
 {
     public static ScentTrail CurrentActiveTrail;
-    
+
     public bool IsUsed => used;
 
     [Header("Interaction")]
@@ -14,6 +14,9 @@ public class ScentClue : MonoBehaviour
 
     [Header("What this clue unlocks")]
     public ScentTrail trailToUnlock;
+
+    [Header("Particle")]
+    public GameObject particleToHide;
 
     [Header("UI Prompt")]
     [SerializeField] GameObject promptRoot;
@@ -40,10 +43,8 @@ public class ScentClue : MonoBehaviour
     {
         var p = GameObject.FindGameObjectWithTag("Player");
         if (p == null) return;
-
         player = p.transform;
         controller = p.GetComponent<CatController>();
-
         if (promptTMP) promptTMP.text = promptText;
         if (promptRoot) promptRoot.SetActive(false);
     }
@@ -54,14 +55,14 @@ public class ScentClue : MonoBehaviour
         if (player == null || controller == null) return;
 
         bool inRange = Vector3.Distance(transform.position, player.position) <= interactRange;
-
         if (promptRoot) promptRoot.SetActive(inRange);
         if (!inRange) return;
-
         if (!controller.ConsumeInteractPressed()) return;
         if (trailToUnlock == null) return;
 
         if (oneTimeOnly) used = true;
+
+        if (particleToHide) particleToHide.SetActive(false);
 
         CurrentActiveTrail = trailToUnlock;
         trailToUnlock.UnlockAndShow();
