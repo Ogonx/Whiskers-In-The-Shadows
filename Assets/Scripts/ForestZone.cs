@@ -6,7 +6,7 @@ public class ForestZone : MonoBehaviour
     {
         if (!other.CompareTag("Player")) return;
         var cat = other.GetComponent<CatController>();
-        if (cat) cat.SetInForest(true);
+        if (cat) cat.SetInForest(true); // tell CatController it is in the forest, switches to soft footsteps
     }
 
     void OnTriggerExit(Collider other)

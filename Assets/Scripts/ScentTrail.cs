@@ -5,29 +5,29 @@ using UnityEngine;
 public class ScentTrail : MonoBehaviour
 {
     [Header("Trail Setup")]
-    public List<Transform> points = new List<Transform>();
-    public GameObject scentParticlePrefab;
-    public float spacing = 0.8f;
+    public List<Transform> points = new List<Transform>(); // waypoints defining the trail path
+    public GameObject scentParticlePrefab;                 // the particle object spawned along the trail
+    public float spacing = 0.8f;                           // distance between each spawned particle
 
     [Header("Timing")]
-    public float visibleTime = 3f;
+    public float visibleTime = 3f; // how long the trail stays visible before hiding
 
     [Header("Fade Out")]
     public float fadeOutTime = 1.0f;
-    public bool randomiseFade = true;
-    public Vector2 fadeVariation = new Vector2(0.8f, 1.2f);
+    public bool randomiseFade = true;               // if true, each particle fades at a slightly different rate
+    public Vector2 fadeVariation = new Vector2(0.8f, 1.2f); // range of fade time multipliers
 
-    List<GameObject> spawned = new List<GameObject>();
-    List<Vector3> originalScales = new List<Vector3>();
-    Dictionary<GameObject, Coroutine> fadeRoutines = new Dictionary<GameObject, Coroutine>();
+    List<GameObject> spawned = new List<GameObject>();                      // all spawned particle objects
+    List<Vector3> originalScales = new List<Vector3>();                     // original scales for fade calculations
+    Dictionary<GameObject, Coroutine> fadeRoutines = new Dictionary<GameObject, Coroutine>(); // tracks running fades
 
     Coroutine hideRoutine;
-    bool unlocked;
+    bool unlocked; // trail can only be shown once it has been unlocked by a ScentClue
 
     void Start()
     {
         BuildTrail();
-        SetTrailVisible(false, instant: true);
+        SetTrailVisible(false, instant: true); // start hidden
     }
 
     void BuildTrail()
@@ -41,6 +41,7 @@ public class ScentTrail : MonoBehaviour
 
         if (scentParticlePrefab == null || points.Count < 2) return;
 
+        // spawn particles evenly spaced between each pair of waypoints
         for (int i = 0; i < points.Count - 1; i++)
         {
             if (points[i] == null || points[i + 1] == null) continue;
@@ -73,7 +74,7 @@ public class ScentTrail : MonoBehaviour
         if (hideRoutine != null) StopCoroutine(hideRoutine);
 
         SetTrailVisible(true, instant: true);
-        hideRoutine = StartCoroutine(HideAfterDelay());
+        hideRoutine = StartCoroutine(HideAfterDelay()); // auto-hide after visibleTime
     }
 
     public void ShowForSeconds(float seconds)
@@ -88,7 +89,7 @@ public class ScentTrail : MonoBehaviour
     IEnumerator ShowRoutine(float seconds)
     {
         yield return new WaitForSeconds(seconds);
-        SetTrailVisible(false, instant: false);
+        SetTrailVisible(false, instant: false); // fade out after the time expires
     }
 
     IEnumerator HideAfterDelay()
@@ -108,26 +109,26 @@ public class ScentTrail : MonoBehaviour
             {
                 StopFade(go);
                 go.SetActive(true);
-                go.transform.localScale = originalScales[i];
+                go.transform.localScale = originalScales[i]; // restore scale before showing
             }
             else if (instant || fadeOutTime <= 0.001f)
             {
                 StopFade(go);
-                go.SetActive(false);
+                go.SetActive(false); // instant hide
             }
             else
             {
-                StartFade(go, originalScales[i]);
+                StartFade(go, originalScales[i]); // fade out by shrinking scale to zero
             }
         }
     }
 
     void StartFade(GameObject go, Vector3 startScale)
     {
-        StopFade(go);
+        StopFade(go); // cancel any existing fade on this object
 
         float duration = fadeOutTime;
-        if (randomiseFade) duration *= Random.Range(fadeVariation.x, fadeVariation.y);
+        if (randomiseFade) duration *= Random.Range(fadeVariation.x, fadeVariation.y); // vary fade time slightly
 
         fadeRoutines[go] = StartCoroutine(FadeByScaleRoutine(go, startScale, duration));
     }
@@ -150,7 +151,7 @@ public class ScentTrail : MonoBehaviour
             if (go == null) yield break;
 
             t += Time.deltaTime;
-            go.transform.localScale = startScale * Mathf.SmoothStep(1f, 0f, Mathf.Clamp01(t / duration));
+            go.transform.localScale = startScale * Mathf.SmoothStep(1f, 0f, Mathf.Clamp01(t / duration)); // shrink to zero
             yield return null;
         }
 

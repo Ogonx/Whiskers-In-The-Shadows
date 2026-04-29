@@ -2,8 +2,9 @@ using UnityEngine;
 
 public class JumpscareTrigger : MonoBehaviour
 {
-    [SerializeField] BagManJumpscareDirector director;
+    [SerializeField] BagManJumpscareDirector director; // the jumpscare sequence to play
     [SerializeField] string playerTag = "Player";
+
     bool triggered;
 
     void OnTriggerEnter(Collider other)
@@ -11,6 +12,6 @@ public class JumpscareTrigger : MonoBehaviour
         if (triggered) return;
         if (!other.CompareTag(playerTag)) return;
         triggered = true;
-        director.Play();
+        director.Play(); // fire the jumpscare director
     }
 }

@@ -7,7 +7,7 @@ public class ForestCinematicViewExit : MonoBehaviour
     public CatController catController;
     public PSXCameraFollow cameraFollow;
     public Camera mainCamera;
-    public ForestCinematicView forestCinematicView;
+    public ForestCinematicView forestCinematicView; // reference to stop the high camera tracking
 
     [Header("Audio")]
     public AudioSource ambientMusicSource;
@@ -16,7 +16,7 @@ public class ForestCinematicViewExit : MonoBehaviour
     public float windFadeInDuration = 2f;
 
     [Header("Camera Blend")]
-    public float blendBackDuration = 3f;
+    public float blendBackDuration = 3f; // how long the camera takes to blend back to normal follow
 
     bool triggered = false;
 
@@ -30,10 +30,11 @@ public class ForestCinematicViewExit : MonoBehaviour
 
     IEnumerator EndSequence()
     {
-        if (forestCinematicView) forestCinematicView.StopTracking();
+        if (forestCinematicView) forestCinematicView.StopTracking(); // stop the high camera coroutine
 
         if (cameraFollow)
         {
+            // set up a smooth blend back to normal follow camera
             cameraFollow.blendStartPos = mainCamera.transform.position;
             cameraFollow.blendStartRot = mainCamera.transform.rotation;
             cameraFollow.blendBackTimer = 0f;
@@ -43,12 +44,12 @@ public class ForestCinematicViewExit : MonoBehaviour
             cameraFollow.frozen = false;
         }
 
-        StartCoroutine(FadeAudio(ambientMusicSource, 0f, musicFadeOutDuration));
-        StartCoroutine(FadeInAudio(windAudio, windFadeInDuration));
+        StartCoroutine(FadeAudio(ambientMusicSource, 0f, musicFadeOutDuration)); // fade music out
+        StartCoroutine(FadeInAudio(windAudio, windFadeInDuration));              // fade wind back in
 
-        yield return new WaitForSeconds(blendBackDuration);
+        yield return new WaitForSeconds(blendBackDuration); // wait for camera blend to finish
 
-        catController.UnfreezeMovement();
+        catController.UnfreezeMovement(); // give control back to the player
     }
 
     IEnumerator FadeAudio(AudioSource source, float targetVolume, float duration)
@@ -59,7 +60,7 @@ public class ForestCinematicViewExit : MonoBehaviour
         while (elapsed < duration)
         {
             elapsed += Time.deltaTime;
-            source.volume = Mathf.Lerp(startVolume, targetVolume, elapsed / duration);
+            source.volume = Mathf.Lerp(startVolume, targetVolume, elapsed / duration); // fade out
             yield return null;
         }
         source.volume = targetVolume;
@@ -75,7 +76,7 @@ public class ForestCinematicViewExit : MonoBehaviour
         while (elapsed < duration)
         {
             elapsed += Time.deltaTime;
-            source.volume = Mathf.Lerp(0f, 1f, elapsed / duration);
+            source.volume = Mathf.Lerp(0f, 1f, elapsed / duration); // fade in
             yield return null;
         }
         source.volume = 1f;

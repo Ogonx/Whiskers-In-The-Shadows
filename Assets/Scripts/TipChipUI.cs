@@ -8,8 +8,8 @@ public class TipChipUI : MonoBehaviour
     [SerializeField] private TMP_Text tipText;
 
     [Header("Timing")]
-    [SerializeField] private float duration = 4f;
-    [SerializeField] private float fadeOut = 0.25f;
+    [SerializeField] private float duration = 4f;  // how long the chip stays visible
+    [SerializeField] private float fadeOut = 0.25f; // how long the fade out takes
 
     private Coroutine co;
 
@@ -23,17 +23,16 @@ public class TipChipUI : MonoBehaviour
     {
         if (!canvasGroup) canvasGroup = GetComponent<CanvasGroup>();
         if (tipText) tipText.text = message;
-
-        if (co != null) StopCoroutine(co);
+        if (co != null) StopCoroutine(co); // cancel any existing show
         co = StartCoroutine(Run());
     }
 
     private IEnumerator Run()
     {
-        canvasGroup.alpha = 1f;
-
+        canvasGroup.alpha = 1f; // show immediately
         yield return new WaitForSeconds(duration);
 
+        // fade out
         float t = 0f;
         while (t < fadeOut)
         {
@@ -48,6 +47,6 @@ public class TipChipUI : MonoBehaviour
 
     private void HideNow()
     {
-        if (canvasGroup) canvasGroup.alpha = 0f;
+        if (canvasGroup) canvasGroup.alpha = 0f; // invisible
     }
 }

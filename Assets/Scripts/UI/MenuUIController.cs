@@ -28,9 +28,9 @@ public class MenuUIController : MonoBehaviour
 
     [Header("Volume")]
     [Range(0f, 1f)] public float defaultVolume = 1f;
-    public float volumeStep = 0.05f;
-    public float holdRepeatDelay = 0.28f;
-    public float holdRepeatRate = 0.06f;
+    public float volumeStep = 0.05f;         // how much volume changes per key tap
+    public float holdRepeatDelay = 0.28f;    // how long to hold before repeat kicks in
+    public float holdRepeatRate = 0.06f;     // how fast it repeats while held
     const string VolumePrefKey = "MASTER_VOLUME";
 
     [Header("Glow")]
@@ -58,18 +58,21 @@ public class MenuUIController : MonoBehaviour
     public PawStamp pawStamp;
     public float afterPawsDelay = 0.15f;
 
-    int mainIndex;
-    int optionsIndex;
-    int audioIndex;
-    bool audioEditing;
-    bool loading;
+    int mainIndex;     // currently selected index on the main menu
+    int optionsIndex;  // currently selected index on the options menu
+    int audioIndex;    // currently selected index on the audio panel
+    bool audioEditing; // whether the volume slider is being actively adjusted
+    bool loading;      // prevents input while scene is loading
 
-    float holdTimer;
-    float holdRepeatTimer;
-    int holdDir;
+    float holdTimer;       // tracks how long a volume key has been held
+    float holdRepeatTimer; // tracks time within repeat cycles
+    int holdDir;           // -1 for left, +1 for right, 0 for none
 
     void Start()
     {
+        Cursor.visible = false;
+        Cursor.lockState = CursorLockMode.Locked; // hide cursor for keyboard-only navigation
+
         SetState(State.Main);
         SetupMasterVolume();
 
@@ -80,7 +83,7 @@ public class MenuUIController : MonoBehaviour
             fadeOverlay2.blocksRaycasts = true;
             fadeOverlay2.interactable = false;
             fadeOverlay2.transform.SetAsLastSibling();
-            StartCoroutine(FadeCanvasGroup(fadeOverlay2, 1f, 0f, fadeInOnStart));
+            StartCoroutine(FadeCanvasGroup(fadeOverlay2, 1f, 0f, fadeInOnStart)); // fade in from black on start
         }
 
         if (blackOverlay != null)
@@ -96,7 +99,7 @@ public class MenuUIController : MonoBehaviour
 
     void SetupMasterVolume()
     {
-        float saved = Mathf.Clamp01(PlayerPrefs.GetFloat(VolumePrefKey, defaultVolume));
+        float saved = Mathf.Clamp01(PlayerPrefs.GetFloat(VolumePrefKey, defaultVolume)); // load saved volume
         ApplyVolume(saved);
 
         if (volumeSlider == null) return;
@@ -110,7 +113,7 @@ public class MenuUIController : MonoBehaviour
     }
 
     void OnSliderChanged(float v) { ApplyVolume(v); SaveVolume(v); }
-    void ApplyVolume(float v) => AudioListener.volume = Mathf.Clamp01(v);
+    void ApplyVolume(float v) => AudioListener.volume = Mathf.Clamp01(v); // apply to global listener
     void SaveVolume(float v)
     {
         PlayerPrefs.SetFloat(VolumePrefKey, Mathf.Clamp01(v));
@@ -119,11 +122,12 @@ public class MenuUIController : MonoBehaviour
 
     void Update()
     {
-        if (loading) return;
+        if (loading) return; // ignore input while loading
 
         var kb = Keyboard.current;
         if (kb == null) return;
 
+        // escape navigates back through menu states
         if (WasPressed(kb.escapeKey))
         {
             if (state == State.Audio && audioEditing) { audioEditing = false; holdDir = 0; PlayConfirm(); ApplyAudioVisuals(); return; }
@@ -135,7 +139,7 @@ public class MenuUIController : MonoBehaviour
         if (state == State.Controls)
         {
             if (WasPressed(kb.enterKey) || WasPressed(kb.spaceKey) || WasPressed(kb.backspaceKey))
-                SetState(State.Options);
+                SetState(State.Options); // any confirm key goes back from controls
             return;
         }
 
@@ -143,7 +147,7 @@ public class MenuUIController : MonoBehaviour
         {
             if (audioEditing && audioIndex == 0)
             {
-                HandleVolumeAdjust(kb);
+                HandleVolumeAdjust(kb); // handle left/right for volume while editing
 
                 if (WasPressed(kb.enterKey) || WasPressed(kb.spaceKey))
                 {
@@ -159,7 +163,7 @@ public class MenuUIController : MonoBehaviour
 
             if (WasPressed(kb.upArrowKey) || WasPressed(kb.wKey) || WasPressed(kb.downArrowKey) || WasPressed(kb.sKey))
             {
-                audioIndex = 1 - audioIndex;
+                audioIndex = 1 - audioIndex; // toggle between volume and back
                 PlayMove();
                 ApplyAudioVisuals();
             }
@@ -190,9 +194,11 @@ public class MenuUIController : MonoBehaviour
         bool leftDown = kb.leftArrowKey.isPressed || kb.aKey.isPressed;
         bool rightDown = kb.rightArrowKey.isPressed || kb.dKey.isPressed;
 
+        // single tap decreases/increases volume immediately
         if (WasPressed(kb.leftArrowKey) || WasPressed(kb.aKey)) { NudgeVolume(-1); holdDir = -1; holdTimer = holdRepeatTimer = 0f; return; }
         if (WasPressed(kb.rightArrowKey) || WasPressed(kb.dKey)) { NudgeVolume(+1); holdDir = +1; holdTimer = holdRepeatTimer = 0f; return; }
 
+        // hold-to-repeat kicks in after holdRepeatDelay
         if ((holdDir == -1 && leftDown) || (holdDir == +1 && rightDown))
         {
             holdTimer += Time.unscaledDeltaTime;
@@ -212,7 +218,6 @@ public class MenuUIController : MonoBehaviour
     void NudgeVolume(int dir)
     {
         if (volumeSlider == null) return;
-
         float v = Mathf.Clamp01(volumeSlider.value + dir * volumeStep);
         volumeSlider.SetValueWithoutNotify(v);
         ApplyVolume(v);
@@ -224,7 +229,7 @@ public class MenuUIController : MonoBehaviour
     {
         if (state == State.Main)
         {
-            if (mainIndex == 0) StartCoroutine(NewGameFlow());
+            if (mainIndex == 0) StartCoroutine(NewGameFlow()); // New Game
             else if (mainIndex == 1) { PlayConfirm(); SetState(State.Options); }
             else if (mainIndex == 2) { PlayConfirm(); Application.Quit(); }
         }
@@ -246,13 +251,13 @@ public class MenuUIController : MonoBehaviour
         {
             fadeOverlay2.gameObject.SetActive(true);
             fadeOverlay2.transform.SetAsLastSibling();
-            yield return FadeCanvasGroup(fadeOverlay2, fadeOverlay2.alpha, 1f, fadeToBlackOnNewGame);
+            yield return FadeCanvasGroup(fadeOverlay2, fadeOverlay2.alpha, 1f, fadeToBlackOnNewGame); // fade to black
             fadeOverlay2.alpha = 1f;
         }
 
         if (blackOverlay != null) { blackOverlay.alpha = 1f; blackOverlay.transform.SetAsLastSibling(); }
         if (fadeOverlay2 != null) fadeOverlay2.gameObject.SetActive(false);
-        if (pawStamp != null) yield return pawStamp.Play();
+        if (pawStamp != null) yield return pawStamp.Play(); // paw stamp animation
         if (afterPawsDelay > 0f) yield return new WaitForSecondsRealtime(afterPawsDelay);
 
         SceneManager.LoadScene(gameplaySceneName);
@@ -280,7 +285,7 @@ public class MenuUIController : MonoBehaviour
     void Step(int d)
     {
         if (state == State.Main && mainGlowItems != null && mainGlowItems.Length > 0)
-            mainIndex = (mainIndex + d + mainGlowItems.Length) % mainGlowItems.Length;
+            mainIndex = (mainIndex + d + mainGlowItems.Length) % mainGlowItems.Length; // wrap around
 
         if (state == State.Options && optionsGlowItems != null && optionsGlowItems.Length > 0)
             optionsIndex = (optionsIndex + d + optionsGlowItems.Length) % optionsGlowItems.Length;
@@ -317,9 +322,7 @@ public class MenuUIController : MonoBehaviour
     void ApplyAudioVisuals()
     {
         if (masterGlow == null || audioBackGlow == null) return;
-
         if (state != State.Audio) { masterGlow.color = normalGlow; audioBackGlow.color = normalGlow; return; }
-
         masterGlow.color = (audioEditing && audioIndex == 0) || audioIndex == 0 ? selectedGlow : normalGlow;
         audioBackGlow.color = audioIndex == 1 ? selectedGlow : normalGlow;
     }
@@ -327,23 +330,19 @@ public class MenuUIController : MonoBehaviour
     void PulseSelected()
     {
         TextMeshProUGUI t = null;
-
         if (state == State.Main && mainGlowItems != null && mainGlowItems.Length > 0) t = mainGlowItems[mainIndex];
         else if (state == State.Options && optionsGlowItems != null && optionsGlowItems.Length > 0) t = optionsGlowItems[optionsIndex];
-
         if (t == null) return;
 
         float p = 1 - pulseAmount + (Mathf.Sin(Time.unscaledTime * pulseSpeed) * .5f + .5f) * pulseAmount;
-        t.color = new Color(selectedGlow.r * p, selectedGlow.g * p, selectedGlow.b * p, selectedGlow.a);
+        t.color = new Color(selectedGlow.r * p, selectedGlow.g * p, selectedGlow.b * p, selectedGlow.a); // pulsing glow on selected item
     }
 
     void PulseAudio()
     {
         if (state != State.Audio) return;
-
         var t = audioIndex == 0 ? masterGlow : audioBackGlow;
         if (t == null) return;
-
         float p = 1 - pulseAmount + (Mathf.Sin(Time.unscaledTime * pulseSpeed) * .5f + .5f) * pulseAmount;
         t.color = new Color(selectedGlow.r * p, selectedGlow.g * p, selectedGlow.b * p, selectedGlow.a);
     }

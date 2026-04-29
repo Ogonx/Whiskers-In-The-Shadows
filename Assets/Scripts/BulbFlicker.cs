@@ -8,6 +8,6 @@ public class LightFlicker : MonoBehaviour
 
     void Update()
     {
-        lightSrc.intensity = Mathf.Lerp(minIntensity, maxIntensity, Mathf.PerlinNoise(Time.time * 5f, 0f));
+        lightSrc.intensity = Mathf.Lerp(minIntensity, maxIntensity, Mathf.PerlinNoise(Time.time * 5f, 0f)); // smooth random flicker using perlin noise
     }
 }

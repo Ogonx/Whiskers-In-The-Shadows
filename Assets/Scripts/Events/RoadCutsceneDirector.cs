@@ -9,45 +9,45 @@ public class RoadCutsceneDirector : MonoBehaviour
     public Camera mainCamera;
     public Transform bagManTransform;
     public GameObject bagManObject;
-    public BagManChase chasePatrol;
+    public BagManChase chasePatrol;    // stopped at the start of this sequence
     public Animator bagManAnimator;
 
     [Header("Car")]
-    public GameObject roadCar;
-    public Transform carStartPoint;
-    public Transform carEndPoint;
-    public Transform bagManHitPoint;
-    public Transform bagManChaseStart;
-    public Transform carCrashPosition;
-    public float carSpeed = 40f;
-    public float bagManRunSpeed = 6f;
+    public GameObject roadCar;           // the car GameObject, hidden until the cutscene
+    public Transform carStartPoint;      // where the car spawns
+    public Transform carEndPoint;        // where the car drives to
+    public Transform bagManHitPoint;     // where BagMan stands waiting to get hit
+    public Transform bagManChaseStart;   // where BagMan is repositioned for the cutscene
+    public Transform carCrashPosition;   // final position of the car after the hit
+    public float carSpeed = 40f;         // how fast the car drives across
+    public float bagManRunSpeed = 6f;    // how fast BagMan runs to the hit point
 
     [Header("Camera")]
-    public Transform cinematicCamPoint;
-    public float camMoveDuration = 1f;
+    public Transform cinematicCamPoint;  // fixed camera position for the cutscene
+    public float camMoveDuration = 1f;   // how long the camera takes to move to cinematic position
 
     [Header("Cat")]
-    public Transform catCrossTarget;
+    public Transform catCrossTarget;     // where the cat walks to during the cutscene
     public float catCrossSpeed = 4f;
 
     [Header("Audio")]
     public AudioSource windSource;
-    public AudioSource chaseMusic;
-    public AudioSource hornSource;
-    public AudioSource crashSource;
+    public AudioSource chaseMusic;  // stopped at the start
+    public AudioSource hornSource;  // car horn played before the car appears
+    public AudioSource crashSource; // crash sound when car hits BagMan
 
     [Header("Effects")]
-    public ParticleSystem smokeParticle;
-    public ParticleSystem crashSmokeParticle;
+    public ParticleSystem smokeParticle;       // smoke at the hit point
+    public ParticleSystem crashSmokeParticle;  // smoke at the crash position
 
     [Header("Trail")]
-    public ScentTrail homeTrail;
+    public ScentTrail homeTrail; // activated after the cutscene to guide player home
 
     bool triggered = false;
 
     void Start()
     {
-        if (roadCar) roadCar.SetActive(false);
+        if (roadCar) roadCar.SetActive(false); // hide car at start
         if (smokeParticle) smokeParticle.gameObject.SetActive(false);
         if (crashSmokeParticle) crashSmokeParticle.gameObject.SetActive(false);
     }
@@ -62,13 +62,13 @@ public class RoadCutsceneDirector : MonoBehaviour
 
     IEnumerator CutsceneSequence()
     {
-        if (chasePatrol) chasePatrol.StopChase();
-        if (chaseMusic) chaseMusic.Stop();
+        if (chasePatrol) chasePatrol.StopChase(); // stop BagMan patrol
+        if (chaseMusic) chaseMusic.Stop();        // stop chase music
 
         catController.FreezeMovement();
         cameraFollow.frozen = true;
 
-        if (windSource) windSource.volume = 0f;
+        if (windSource) windSource.volume = 0f; // silence wind
 
         if (bagManObject && bagManChaseStart)
         {
@@ -81,44 +81,45 @@ public class RoadCutsceneDirector : MonoBehaviour
                 rb.linearVelocity = Vector3.zero;
                 rb.angularVelocity = Vector3.zero;
             }
-            bagManTransform.position = bagManChaseStart.position;
+            bagManTransform.position = bagManChaseStart.position; // reposition BagMan for cutscene
             bagManTransform.rotation = bagManChaseStart.rotation;
         }
 
-        if (bagManAnimator) bagManAnimator.SetBool("IsRunning", true);
+        if (bagManAnimator) bagManAnimator.SetBool("IsRunning", true); // start run animation
 
-        yield return StartCoroutine(MoveCamToCinematic());
+        yield return StartCoroutine(MoveCamToCinematic()); // move camera to fixed position
 
-        StartCoroutine(MoveBagManToHitPoint());
+        StartCoroutine(MoveBagManToHitPoint()); // BagMan starts running toward hit point
 
-        yield return StartCoroutine(MoveCatAcrossRoad());
+        yield return StartCoroutine(MoveCatAcrossRoad()); // cat crosses the road automatically
 
         yield return new WaitForSeconds(0.3f);
 
-        if (hornSource) hornSource.Play();
+        if (hornSource) hornSource.Play(); // play car horn
 
         yield return new WaitForSeconds(0.5f);
 
+        // activate and position the car
         if (roadCar) roadCar.SetActive(true);
         roadCar.transform.position = carStartPoint.position;
         roadCar.transform.rotation = Quaternion.LookRotation((carEndPoint.position - carStartPoint.position).normalized);
 
-        yield return StartCoroutine(DriveCarAcross());
+        yield return StartCoroutine(DriveCarAcross()); // drive car across and hit BagMan
 
         yield return new WaitForSeconds(2f);
 
-        yield return StartCoroutine(MoveCamBackToCat());
+        yield return StartCoroutine(MoveCamBackToCat()); // pan camera back to cat
 
         if (windSource)
         {
             windSource.Play();
-            windSource.volume = 1f;
+            windSource.volume = 1f; // restore wind
         }
 
-        if (homeTrail) homeTrail.UnlockAndShow();
+        if (homeTrail) homeTrail.UnlockAndShow(); // show trail home
 
         cameraFollow.frozen = false;
-        catController.UnfreezeMovement();
+        catController.UnfreezeMovement(); // give control back
 
         gameObject.SetActive(false);
     }
@@ -130,6 +131,7 @@ public class RoadCutsceneDirector : MonoBehaviour
         Rigidbody rb = bagManObject.GetComponent<Rigidbody>();
         if (rb) rb.isKinematic = true;
 
+        // run BagMan toward the hit point
         while (Vector3.Distance(bagManTransform.position, bagManHitPoint.position) > 0.3f)
         {
             Vector3 dir = (bagManHitPoint.position - bagManTransform.position).normalized;
@@ -139,7 +141,7 @@ public class RoadCutsceneDirector : MonoBehaviour
         }
 
         bagManTransform.position = bagManHitPoint.position;
-        if (bagManAnimator) bagManAnimator.SetBool("IsRunning", false);
+        if (bagManAnimator) bagManAnimator.SetBool("IsRunning", false); // stop running when he arrives
     }
 
     IEnumerator DriveCarAcross()
@@ -151,8 +153,9 @@ public class RoadCutsceneDirector : MonoBehaviour
         while (Vector3.Distance(roadCar.transform.position, carEndPoint.position) > 1f)
         {
             Vector3 dir = (carEndPoint.position - roadCar.transform.position).normalized;
-            roadCar.transform.position += dir * carSpeed * Time.deltaTime;
+            roadCar.transform.position += dir * carSpeed * Time.deltaTime; // drive car forward
 
+            // check if car is close enough to hit BagMan
             if (!hitBagMan && bagManHitPoint != null &&
                 Vector3.Distance(roadCar.transform.position, bagManHitPoint.position) < 5f)
             {
@@ -165,25 +168,25 @@ public class RoadCutsceneDirector : MonoBehaviour
                     rb.useGravity = false;
                 }
 
-                bagManObject.transform.SetParent(roadCar.transform);
+                bagManObject.transform.SetParent(roadCar.transform); // attach BagMan to car
                 bagManObject.transform.localPosition = new Vector3(0f, 0f, 3.5f);
                 bagManObject.transform.localRotation = Quaternion.identity;
 
-                if (crashSource) crashSource.Play();
+                if (crashSource) crashSource.Play(); // play crash sound
 
                 if (smokeParticle)
                 {
                     smokeParticle.gameObject.SetActive(true);
                     smokeParticle.transform.position = bagManHitPoint.position;
-                    smokeParticle.Play();
+                    smokeParticle.Play(); // play impact smoke
                 }
             }
 
             yield return null;
         }
 
-        bagManObject.transform.SetParent(null);
-        bagManObject.SetActive(false);
+        bagManObject.transform.SetParent(null); // detach BagMan from car
+        bagManObject.SetActive(false); // hide BagMan
 
         if (carCrashPosition)
         {
@@ -195,7 +198,7 @@ public class RoadCutsceneDirector : MonoBehaviour
         {
             crashSmokeParticle.gameObject.SetActive(true);
             crashSmokeParticle.transform.position = carCrashPosition.position;
-            crashSmokeParticle.Play();
+            crashSmokeParticle.Play(); // play crash smoke at final position
         }
     }
 
@@ -228,7 +231,7 @@ public class RoadCutsceneDirector : MonoBehaviour
         while (Vector3.Distance(catController.transform.position, targetPos) > 0.3f)
         {
             Vector3 dir = (targetPos - catController.transform.position).normalized;
-            catController.transform.position += dir * catCrossSpeed * Time.deltaTime;
+            catController.transform.position += dir * catCrossSpeed * Time.deltaTime; // move cat across road
             catController.transform.rotation = Quaternion.LookRotation(dir);
             yield return null;
         }
@@ -244,14 +247,14 @@ public class RoadCutsceneDirector : MonoBehaviour
 
         Vector3 catEyeLevel = catController.transform.position + Vector3.up * 0.5f;
         Vector3 dir = catEyeLevel - mainCamera.transform.position;
-        Quaternion targetRot = Quaternion.LookRotation(dir.normalized);
+        Quaternion targetRot = Quaternion.LookRotation(dir.normalized); // face toward the cat
 
         while (elapsed < camMoveDuration)
         {
             elapsed += Time.deltaTime;
             float t = Mathf.SmoothStep(0f, 1f, elapsed / camMoveDuration);
-            mainCamera.transform.rotation = Quaternion.Slerp(startRot, targetRot, t);
-            mainCamera.fieldOfView = Mathf.Lerp(mainCamera.fieldOfView, defaultFOV, t);
+            mainCamera.transform.rotation = Quaternion.Slerp(startRot, targetRot, t); // pan back
+            mainCamera.fieldOfView = Mathf.Lerp(mainCamera.fieldOfView, defaultFOV, t); // restore FOV
             yield return null;
         }
     }

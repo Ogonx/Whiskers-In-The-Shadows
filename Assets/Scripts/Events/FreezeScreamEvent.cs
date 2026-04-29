@@ -13,14 +13,14 @@ public class FreezeScreamEvent : MonoBehaviour
     [Range(0f, 1f)] public float screamVolume = 1f;
 
     [Header("Camera")]
-    public Transform zoomTarget;
-    public float zoomOutTime = 1.5f;
-    public float screamAfter = 1f;
-    public float holdTime = 2.5f;
-    public float zoomReturnTime = 1.0f;
+    public Transform zoomTarget;       // the position and rotation the camera zooms to
+    public float zoomOutTime = 1.5f;   // how long the zoom to target takes
+    public float screamAfter = 1f;     // how far into the zoom the scream plays
+    public float holdTime = 2.5f;      // how long to hold on the zoom target
+    public float zoomReturnTime = 1.0f; // how long to take returning to original position
 
     [Header("Freeze")]
-    public float freezeDuration = 4f;
+    public float freezeDuration = 4f; // total freeze duration
 
     bool triggered;
 
@@ -34,10 +34,10 @@ public class FreezeScreamEvent : MonoBehaviour
 
     IEnumerator FreezeScreamRoutine()
     {
-        catController.FreezeMovement();
+        catController.FreezeMovement(); // stop the cat
 
         var followCam = gameplayCamera.GetComponent<PSXCameraFollow>();
-        if (followCam) followCam.frozen = true;
+        if (followCam) followCam.frozen = true; // freeze follow camera
 
         Vector3 startPos = gameplayCamera.transform.position;
         Quaternion startRot = gameplayCamera.transform.rotation;
@@ -46,6 +46,8 @@ public class FreezeScreamEvent : MonoBehaviour
 
         bool screamPlayed = false;
         float t = 0f;
+
+        // zoom toward the target position
         while (t < zoomOutTime)
         {
             t += Time.deltaTime;
@@ -53,6 +55,7 @@ public class FreezeScreamEvent : MonoBehaviour
             gameplayCamera.transform.position = Vector3.Lerp(startPos, targetPos, k);
             gameplayCamera.transform.rotation = Quaternion.Slerp(startRot, targetRot, k);
 
+            // play the scream mid-zoom at the right moment
             if (!screamPlayed && t >= screamAfter)
             {
                 screamPlayed = true;
@@ -63,8 +66,9 @@ public class FreezeScreamEvent : MonoBehaviour
             yield return null;
         }
 
-        yield return new WaitForSeconds(holdTime);
+        yield return new WaitForSeconds(holdTime); // hold on the zoom target
 
+        // return camera to original position
         t = 0f;
         while (t < zoomReturnTime)
         {
@@ -75,7 +79,7 @@ public class FreezeScreamEvent : MonoBehaviour
             yield return null;
         }
 
-        if (followCam) followCam.frozen = false;
-        catController.UnfreezeMovement();
+        if (followCam) followCam.frozen = false; // unfreeze follow camera
+        catController.UnfreezeMovement();        // give control back to player
     }
 }

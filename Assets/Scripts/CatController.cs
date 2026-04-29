@@ -18,7 +18,7 @@ public class CatController : MonoBehaviour
     public LayerMask groundMask;
 
     [Header("Input Buffer")]
-    public float inputBufferTime = 0.2f;
+    public float inputBufferTime = 0.2f; // how long an input press is remembered after the frame it happened
 
     [Header("Sniff Audio")]
     [SerializeField] AudioSource sniffSource;
@@ -28,26 +28,26 @@ public class CatController : MonoBehaviour
 
     [Header("Footsteps")]
     [SerializeField] AudioSource footstepSource;
-    [SerializeField] AudioClip[] footstepClipsHard;
-    [SerializeField] AudioClip[] footstepClipsSoft;
-    [SerializeField] float footstepInterval = 0.5f;
+    [SerializeField] AudioClip[] footstepClipsHard;  // footstep clips for hard floors inside the house
+    [SerializeField] AudioClip[] footstepClipsSoft;  // footstep clips for soft ground in the forest
+    [SerializeField] float footstepInterval = 0.5f;  // time between footstep sounds
     [SerializeField] Vector2 footstepPitchRange = new Vector2(0.9f, 1.1f);
     [Range(0f, 1f)][SerializeField] float footstepVolume = 0.8f;
 
     Rigidbody rb;
     Animator animator;
-    CatControls controls;
+    CatControls controls; // generated input actions asset
 
     Vector2 moveInput;
     bool isRunning;
     bool isGrounded;
     float jumpCooldownTimer;
-    float interactBufferTimer;
-    float senseBufferTimer;
+    float interactBufferTimer; // counts down after E is pressed
+    float senseBufferTimer;    // counts down after Q is pressed
     float footstepTimer;
 
-    bool inHouse;
-    bool inForest;
+    bool inHouse;   // set by HouseZone trigger, selects hard footstep clips
+    bool inForest;  // set by ForestZone trigger, selects soft footstep clips
 
     void Awake()
     {
@@ -61,12 +61,12 @@ public class CatController : MonoBehaviour
 
         controls.Player.Jump.performed += _ => TryJump();
 
-        controls.Player.Interact.performed += _ => interactBufferTimer = inputBufferTime;
+        controls.Player.Interact.performed += _ => interactBufferTimer = inputBufferTime; // buffer E press
 
         controls.Player.Sense.performed += _ =>
         {
-            senseBufferTimer = inputBufferTime;
-            if (ScentClue.CurrentActiveTrail != null) PlaySniff();
+            senseBufferTimer = inputBufferTime; // buffer Q press
+            if (ScentClue.CurrentActiveTrail != null) PlaySniff(); // play sniff sound if trail active
         };
 
         controls.Enable();
@@ -81,7 +81,7 @@ public class CatController : MonoBehaviour
         {
             groundCheck = new GameObject("GroundCheck").transform;
             groundCheck.SetParent(transform);
-            groundCheck.localPosition = new Vector3(0f, 0.05f, 0f);
+            groundCheck.localPosition = new Vector3(0f, 0.05f, 0f); // just above the feet
         }
 
         if (!sniffSource) sniffSource = GetComponent<AudioSource>();
@@ -89,6 +89,7 @@ public class CatController : MonoBehaviour
 
     void Update()
     {
+        // count down input buffer timers each frame
         if (interactBufferTimer > 0f) interactBufferTimer -= Time.deltaTime;
         if (senseBufferTimer > 0f) senseBufferTimer -= Time.deltaTime;
 
@@ -100,7 +101,7 @@ public class CatController : MonoBehaviour
     public bool ConsumeInteractPressed()
     {
         if (interactBufferTimer <= 0f) return false;
-        interactBufferTimer = 0f;
+        interactBufferTimer = 0f; // consume the input so it cant fire twice
         return true;
     }
 
@@ -117,19 +118,19 @@ public class CatController : MonoBehaviour
         isRunning = false;
         if (rb != null)
         {
-            rb.linearVelocity = Vector3.zero;
+            rb.linearVelocity = Vector3.zero;    // stop all movement
             rb.angularVelocity = Vector3.zero;
         }
-        controls.Player.Disable();
+        controls.Player.Disable(); // block all player input
     }
 
     public void UnfreezeMovement()
     {
-        controls.Player.Enable();
+        controls.Player.Enable(); // restore player input
     }
 
-    public void SetInHouse(bool value) { inHouse = value; }
-    public void SetInForest(bool value) { inForest = value; }
+    public void SetInHouse(bool value) { inHouse = value; }    // called by HouseZone
+    public void SetInForest(bool value) { inForest = value; }  // called by ForestZone
 
     void HandleMovement()
     {
@@ -139,6 +140,7 @@ public class CatController : MonoBehaviour
         Vector3 moveDir = (transform.forward * input.z + transform.right * input.x).normalized
                         * (isRunning ? runSpeed : walkSpeed);
 
+        // apply horizontal velocity while preserving vertical (gravity)
         Vector3 vel = rb.linearVelocity;
         vel.x = moveDir.x;
         vel.z = moveDir.z;
@@ -155,12 +157,12 @@ public class CatController : MonoBehaviour
             if (footstepTimer <= 0f)
             {
                 PlayFootstep();
-                footstepTimer = isRunning ? footstepInterval * 0.6f : footstepInterval;
+                footstepTimer = isRunning ? footstepInterval * 0.6f : footstepInterval; // faster interval when running
             }
         }
         else if (moveInput.y <= 0.1f)
         {
-            footstepTimer = footstepInterval;
+            footstepTimer = footstepInterval; // reset timer when not moving forward
         }
     }
 
@@ -172,14 +174,14 @@ public class CatController : MonoBehaviour
         vel.y = 0f;
         rb.linearVelocity = vel;
 
-        rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+        rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse); // apply upward jump force
         jumpCooldownTimer = jumpCooldown;
-        animator.SetTrigger("Stretch");
+        animator.SetTrigger("Stretch"); // play jump animation
     }
 
     void UpdateGrounded()
     {
-        isGrounded = Physics.CheckSphere(groundCheck.position, groundCheckRadius, ~0);
+        isGrounded = Physics.CheckSphere(groundCheck.position, groundCheckRadius, ~0); // check if on ground
         animator.SetBool("Grounded", isGrounded);
     }
 
@@ -192,13 +194,13 @@ public class CatController : MonoBehaviour
     {
         AudioClip[] clips = null;
 
-        if (inHouse) clips = footstepClipsHard;
-        else if (inForest) clips = footstepClipsSoft;
-        else return;
+        if (inHouse) clips = footstepClipsHard;       // hard floor inside
+        else if (inForest) clips = footstepClipsSoft; // soft ground outside
+        else return;                                   // no footstep zone, skip
 
         if (footstepSource == null || clips == null || clips.Length == 0) return;
-        footstepSource.pitch = Random.Range(footstepPitchRange.x, footstepPitchRange.y);
-        footstepSource.PlayOneShot(clips[Random.Range(0, clips.Length)], footstepVolume);
+        footstepSource.pitch = Random.Range(footstepPitchRange.x, footstepPitchRange.y); // randomise pitch slightly
+        footstepSource.PlayOneShot(clips[Random.Range(0, clips.Length)], footstepVolume); // random clip
     }
 
     void PlaySniff()
@@ -208,5 +210,5 @@ public class CatController : MonoBehaviour
         sniffSource.PlayOneShot(sniffClip, sniffVolume);
     }
 
-    void OnDestroy() => controls.Disable();
+    void OnDestroy() => controls.Disable(); // clean up input when destroyed
 }

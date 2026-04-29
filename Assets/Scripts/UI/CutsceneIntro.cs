@@ -12,7 +12,7 @@ public class IntroCutsceneDirector : MonoBehaviour
     [SerializeField] AnimationCurve lidCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
 
     [Header("Cat Camera")]
-    [SerializeField] Transform catCamera;
+    [SerializeField] Transform catCamera; // the cat's POV camera used for the pan and wobble
 
     [Header("Head Wobble")]
     [SerializeField] float wobbleDuration = 0.6f;
@@ -49,30 +49,30 @@ public class IntroCutsceneDirector : MonoBehaviour
     [Range(0f, 1f)][SerializeField] float clockTargetVolume = 0.65f;
 
     [Header("Purr")]
-    [Range(0f, 1f)][SerializeField] float purrSleepVolume = 0.55f;
-    [Range(0f, 1f)][SerializeField] float purrAwakeVolume = 0.20f;
+    [Range(0f, 1f)][SerializeField] float purrSleepVolume = 0.55f;  // purr volume when eyes closed
+    [Range(0f, 1f)][SerializeField] float purrAwakeVolume = 0.20f;  // purr volume when eyes open
     [SerializeField] float purrDuckFadeTime = 0.35f;
 
     [Header("Door Beat")]
-    [SerializeField] float blackHoldBeforeAnything = 1.5f;
+    [SerializeField] float blackHoldBeforeAnything = 1.5f;     // hold black at start before anything plays
     [SerializeField] float thunderDelay = 0.6f;
     [SerializeField] float doorDelayAfterThunder = 0.4f;
-    [SerializeField] float openOnDoorTime = 3.5f;
-    [SerializeField] float doorCloseStartsAt = 3.0f;
+    [SerializeField] float openOnDoorTime = 3.5f;              // how long the eyes take to open on door sound
+    [SerializeField] float doorCloseStartsAt = 3.0f;           // when during the door beat the eyes start closing
     [SerializeField] float closeAfterDoorCloseTime = 1.3f;
     [SerializeField] float closedHoldAfterDoorBeat = 0.6f;
 
     [Header("Person")]
-    [SerializeField] Transform person;
-    [SerializeField] Transform walkStart;
-    [SerializeField] Transform stopPoint1;
-    [SerializeField] Transform stopPoint2;
-    [SerializeField] Transform exitPoint;
+    [SerializeField] Transform person;       // the owner character
+    [SerializeField] Transform walkStart;    // where the owner starts
+    [SerializeField] Transform stopPoint1;   // first pause point
+    [SerializeField] Transform stopPoint2;   // second pause point where petting happens
+    [SerializeField] Transform exitPoint;    // where the owner walks to and disappears
     [SerializeField] float walkSpeed = 2.5f;
     [SerializeField] float rotateSpeed = 540f;
     [SerializeField] float arriveDistance = 0.05f;
     [Range(0f, 1f)][SerializeField] float footstepsVolume = 1f;
-    [SerializeField] float stopLookHold = 0.9f;
+    [SerializeField] float stopLookHold = 0.9f; // how long the owner looks at the cat before walking on
 
     [Header("Animator")]
     [SerializeField] Animator personAnimator;
@@ -84,7 +84,7 @@ public class IntroCutsceneDirector : MonoBehaviour
     [SerializeField] float blinkOpenTime_Stop1 = 0.45f;
 
     [Header("Pet Moment")]
-    [SerializeField] float panDownDegrees = 20f;
+    [SerializeField] float panDownDegrees = 20f;               // how far the camera tilts down during petting
     [SerializeField] float panDownTime = 1.8f;
     [SerializeField] float eyesCloseAfterPetTime = 1.2f;
     [SerializeField] float petSoundDelayAfterClosed = 0.05f;
@@ -101,12 +101,12 @@ public class IntroCutsceneDirector : MonoBehaviour
     [Header("Next Scene")]
     [SerializeField] string nextSceneName = "MainScene";
 
-    Coroutine purrFadeRoutine;
+    Coroutine purrFadeRoutine;  // stored so new fades can cancel the previous one
     Coroutine blurFadeRoutine;
 
     void Start()
     {
-        SetLids(closedGapY);
+        SetLids(closedGapY); // start with eyes closed
 
         if (blurOverlay)
         {
@@ -115,10 +115,12 @@ public class IntroCutsceneDirector : MonoBehaviour
             blurOverlay.interactable = false;
         }
 
+        // start all audio loops silently
         StartLoopAtZero(rainSource, rainLoop);
         StartLoopAtZero(clockSource, clockLoop);
         StartLoopAtZero(purrSource, purrLoop);
 
+        // fade each audio source in
         if (rainSource) StartCoroutine(FadeAudio(rainSource, 0f, rainTargetVolume, fadeInTimeRain));
         if (clockSource) StartCoroutine(FadeAudio(clockSource, 0f, clockTargetVolume, fadeInTimeClock));
         if (purrSource) StartCoroutine(FadeAudio(purrSource, 0f, purrSleepVolume, fadeInTimePurr));
@@ -140,78 +142,79 @@ public class IntroCutsceneDirector : MonoBehaviour
         yield return new WaitForSecondsRealtime(blackHoldBeforeAnything);
         yield return new WaitForSecondsRealtime(thunderDelay);
 
-        PlaySfx(thunderClip);
+        PlaySfx(thunderClip); // thunder sound
 
         yield return new WaitForSecondsRealtime(doorDelayAfterThunder);
-        yield return DoorBeatRoutine();
+        yield return DoorBeatRoutine(); // door opens, eyes open, eyes close
         yield return new WaitForSecondsRealtime(closedHoldAfterDoorBeat);
 
-        if (person && walkStart) person.position = walkStart.position;
-        yield return OpenEyes(2.6f);
+        if (person && walkStart) person.position = walkStart.position; // place owner at start
+
+        yield return OpenEyes(2.6f); // open eyes as owner comes in
 
         if (person && stopPoint1)
             yield return WalkTo(stopPoint1, true, Camera.main ? Camera.main.transform : null);
 
-        yield return Blink(blinkCloseTime_Stop1, blinkClosedHold_Stop1, blinkOpenTime_Stop1);
+        yield return Blink(blinkCloseTime_Stop1, blinkClosedHold_Stop1, blinkOpenTime_Stop1); // quick blink
         yield return new WaitForSecondsRealtime(stopLookHold);
 
         if (person && stopPoint2)
             yield return WalkTo(stopPoint2, true, Camera.main ? Camera.main.transform : null);
 
-        yield return PetMomentRoutine();
+        yield return PetMomentRoutine(); // owner pets the cat, eyes close
         yield return CloseEyes(finalCloseTime);
-        yield return FadeOutToSleep();
+        yield return FadeOutToSleep(); // fade all audio out
         yield return new WaitForSecondsRealtime(finalBlackHold);
 
-        WakeState.PlayWakeSequenceOnLoad = true;
+        WakeState.PlayWakeSequenceOnLoad = true; // tell MainScene to play the wake sequence
         SceneManager.LoadScene(nextSceneName);
     }
 
     IEnumerator PetMomentRoutine()
     {
-        yield return PanCameraPitchOnly(panDownDegrees, panDownTime);
-        yield return CloseEyes(eyesCloseAfterPetTime);
+        yield return PanCameraPitchOnly(panDownDegrees, panDownTime); // tilt camera down
+        yield return CloseEyes(eyesCloseAfterPetTime);                // cat closes eyes being petted
 
         if (petSoundDelayAfterClosed > 0f)
             yield return new WaitForSecondsRealtime(petSoundDelayAfterClosed);
 
-        PlaySfx(petClip);
+        PlaySfx(petClip); // play petting sound
 
         if (petClip != null)
             yield return new WaitForSecondsRealtime(petClip.length);
 
         yield return new WaitForSecondsRealtime(eyesClosedHoldBeforeLookUp);
-        yield return OpenEyes(eyesOpenToLookUpTime);
-        yield return PanCameraPitchOnly(0f, panUpTime);
+        yield return OpenEyes(eyesOpenToLookUpTime);               // cat opens eyes
+        yield return PanCameraPitchOnly(0f, panUpTime);            // tilt camera back up
         yield return new WaitForSecondsRealtime(watchExitHold);
 
         if (person && exitPoint)
-            yield return WalkTo(exitPoint, false, null);
+            yield return WalkTo(exitPoint, false, null); // owner walks away and exits
     }
 
     IEnumerator DoorBeatRoutine()
     {
-        if (sfxSource && doorOpenCloseClip) sfxSource.PlayOneShot(doorOpenCloseClip);
+        if (sfxSource && doorOpenCloseClip) sfxSource.PlayOneShot(doorOpenCloseClip); // door sound
 
-        yield return OpenEyes(openOnDoorTime);
+        yield return OpenEyes(openOnDoorTime); // eyes open on door sound
 
         yield return new WaitForSecondsRealtime(Mathf.Max(0f, doorCloseStartsAt - openOnDoorTime));
-        yield return CloseEyes(closeAfterDoorCloseTime);
+        yield return CloseEyes(closeAfterDoorCloseTime); // eyes close again
     }
 
     IEnumerator OpenEyes(float dur)
     {
-        SetCatAwake(true);
-        StartBlurPulse();
+        SetCatAwake(true);  // lower purr volume
+        StartBlurPulse();   // brief blur flash as eyes open
         yield return MoveLids(closedGapY, openGapY, dur);
-        yield return MicroHeadWobble();
+        yield return MicroHeadWobble(); // small head movement after opening
     }
 
     IEnumerator CloseEyes(float dur)
     {
         ForceBlurOff();
         yield return MoveLids(openGapY, closedGapY, dur);
-        SetCatAwake(false);
+        SetCatAwake(false); // raise purr volume
     }
 
     IEnumerator Blink(float closeTime, float closedHold, float openTime)
@@ -239,7 +242,7 @@ public class IntroCutsceneDirector : MonoBehaviour
 
     void SetCatAwake(bool awake)
     {
-        FadePurrTo(awake ? purrAwakeVolume : purrSleepVolume, purrDuckFadeTime);
+        FadePurrTo(awake ? purrAwakeVolume : purrSleepVolume, purrDuckFadeTime); // change purr volume based on eye state
     }
 
     void FadePurrTo(float target, float dur)
@@ -252,7 +255,6 @@ public class IntroCutsceneDirector : MonoBehaviour
     IEnumerator MoveLids(float from, float to, float dur)
     {
         if (!topLid || !bottomLid) yield break;
-
         if (dur <= 0.0001f) { SetLids(to); yield break; }
 
         float t = 0f;
@@ -260,7 +262,7 @@ public class IntroCutsceneDirector : MonoBehaviour
         {
             t += Time.unscaledDeltaTime;
             float eased = lidCurve != null ? lidCurve.Evaluate(Mathf.Clamp01(t / dur)) : Mathf.Clamp01(t / dur);
-            SetLids(Mathf.Lerp(from, to, eased));
+            SetLids(Mathf.Lerp(from, to, eased)); // move lids toward target position
             yield return null;
         }
 
@@ -269,8 +271,8 @@ public class IntroCutsceneDirector : MonoBehaviour
 
     void SetLids(float gapY)
     {
-        SetAnchoredY(topLid, -gapY);
-        SetAnchoredY(bottomLid, gapY);
+        SetAnchoredY(topLid, -gapY);  // top lid moves up
+        SetAnchoredY(bottomLid, gapY); // bottom lid moves down
     }
 
     static void SetAnchoredY(RectTransform rt, float y)
@@ -286,7 +288,7 @@ public class IntroCutsceneDirector : MonoBehaviour
         if (!catCamera) yield break;
 
         Vector3 startEuler = catCamera.localEulerAngles;
-        float startX = startEuler.x > 180f ? startEuler.x - 360f : startEuler.x;
+        float startX = startEuler.x > 180f ? startEuler.x - 360f : startEuler.x; // convert to signed angle
 
         if (dur <= 0.0001f) { catCamera.localEulerAngles = new Vector3(targetPitchDegrees, startEuler.y, startEuler.z); yield break; }
 
@@ -313,12 +315,12 @@ public class IntroCutsceneDirector : MonoBehaviour
         while (t < wobbleDuration)
         {
             t += Time.deltaTime;
-            float wob = Mathf.Sin(t * wobbleSpeed) * (1f - Mathf.Clamp01(t / wobbleDuration));
+            float wob = Mathf.Sin(t * wobbleSpeed) * (1f - Mathf.Clamp01(t / wobbleDuration)); // wobble fades out over time
             catCamera.localEulerAngles = new Vector3(baseX + wob * wobblePitch, baseEuler.y, baseZ + wob * wobbleRoll);
             yield return null;
         }
 
-        catCamera.localEulerAngles = new Vector3(baseX, baseEuler.y, baseZ);
+        catCamera.localEulerAngles = new Vector3(baseX, baseEuler.y, baseZ); // snap back to base rotation
     }
 
     IEnumerator WalkTo(Transform targetPos, bool faceTargetWhenArrived, Transform faceTarget)
@@ -344,6 +346,7 @@ public class IntroCutsceneDirector : MonoBehaviour
 
         if (faceTargetWhenArrived && faceTarget)
         {
+            // rotate owner to face camera over 0.35 seconds
             float t = 0f;
             while (t < 0.35f)
             {
@@ -368,11 +371,11 @@ public class IntroCutsceneDirector : MonoBehaviour
             footstepsSource.clip = footstepsLoop;
             footstepsSource.loop = true;
             footstepsSource.volume = footstepsVolume;
-            footstepsSource.Play();
+            footstepsSource.Play(); // start footsteps when walking
         }
         else
         {
-            if (footstepsSource.isPlaying) footstepsSource.Stop();
+            if (footstepsSource.isPlaying) footstepsSource.Stop(); // stop footsteps when standing still
         }
     }
 
@@ -381,7 +384,7 @@ public class IntroCutsceneDirector : MonoBehaviour
         if (!src || !clip) return;
         src.clip = clip;
         src.loop = true;
-        src.volume = 0f;
+        src.volume = 0f;       // start silent so it can be faded in
         if (!src.isPlaying) src.Play();
     }
 
@@ -396,7 +399,7 @@ public class IntroCutsceneDirector : MonoBehaviour
         while (t < dur)
         {
             t += Time.unscaledDeltaTime;
-            src.volume = Mathf.Lerp(from, to, Mathf.Clamp01(t / dur));
+            src.volume = Mathf.Lerp(from, to, Mathf.Clamp01(t / dur)); // gradually change volume
             yield return null;
         }
 
@@ -407,6 +410,7 @@ public class IntroCutsceneDirector : MonoBehaviour
     {
         if (footstepsSource && footstepsSource.isPlaying) footstepsSource.Stop();
 
+        // fade all three audio sources out at the same time
         Coroutine a = rainSource ? StartCoroutine(FadeAudio(rainSource, rainSource.volume, 0f, fadeOutTime)) : null;
         Coroutine b = clockSource ? StartCoroutine(FadeAudio(clockSource, clockSource.volume, 0f, fadeOutTime)) : null;
         Coroutine c = purrSource ? StartCoroutine(FadeAudio(purrSource, purrSource.volume, 0f, fadeOutTime)) : null;

@@ -12,7 +12,7 @@ public class PauseMenuController : MonoBehaviour
     State state = State.Main;
 
     [Header("Pause Root")]
-    public GameObject pauseCanvasRoot;
+    public GameObject pauseCanvasRoot; // the whole pause menu UI, shown/hidden on pause
 
     [Header("Panels")]
     public GameObject mainChoicesPanel;
@@ -50,9 +50,9 @@ public class PauseMenuController : MonoBehaviour
     public AudioClip confirmClip;
 
     [Header("Pause Audio")]
-    public bool pauseAllSceneAudio = true;
-    public bool pauseListener = false;
-    public bool muteListener = false;
+    public bool pauseAllSceneAudio = true; // whether to pause all audio sources on pause
+    public bool pauseListener = false;     // whether to pause the AudioListener
+    public bool muteListener = false;      // whether to mute the AudioListener instead
 
     int mainIndex;
     int optionsIndex;
@@ -60,13 +60,13 @@ public class PauseMenuController : MonoBehaviour
     bool audioEditing;
     bool paused;
 
-    readonly List<AudioSource> pausedSources = new List<AudioSource>();
+    readonly List<AudioSource> pausedSources = new List<AudioSource>(); // tracks which sources were paused so they can be resumed
     float savedListenerVolume = 1f;
 
     void Start()
     {
         if (pauseCanvasRoot != null)
-            pauseCanvasRoot.SetActive(false);
+            pauseCanvasRoot.SetActive(false); // hide pause menu at start
 
         paused = false;
         Time.timeScale = 1f;
@@ -84,18 +84,19 @@ public class PauseMenuController : MonoBehaviour
         {
             PlayMove();
 
-            if (!paused) { Pause(); return; }
+            if (!paused) { Pause(); return; } // ESC pauses if not already paused
 
+            // ESC navigates back through menu states when paused
             if (state == State.Audio && audioEditing) { audioEditing = false; ApplyAudioVisuals(); return; }
             if (state == State.Audio) { SetState(State.Options); return; }
             if (state == State.Options) { SetState(State.Main); return; }
             if (state == State.Controls) { SetState(State.Options); return; }
 
-            Resume();
+            Resume(); // ESC on main pause panel resumes game
             return;
         }
 
-        if (!paused) return;
+        if (!paused) return; // ignore all other input if not paused
 
         if (state == State.Controls)
         {
@@ -120,7 +121,7 @@ public class PauseMenuController : MonoBehaviour
 
             if (WasPressed(kb.upArrowKey) || WasPressed(kb.wKey) || WasPressed(kb.downArrowKey) || WasPressed(kb.sKey))
             {
-                audioIndex = 1 - audioIndex;
+                audioIndex = 1 - audioIndex; // toggle between volume and back
                 PlayMove();
                 ApplyAudioVisuals();
             }
@@ -148,12 +149,12 @@ public class PauseMenuController : MonoBehaviour
     void Pause()
     {
         paused = true;
-        Time.timeScale = 0f;
+        Time.timeScale = 0f; // freeze the game
 
         if (pauseCanvasRoot != null) pauseCanvasRoot.SetActive(true);
 
         Cursor.visible = true;
-        Cursor.lockState = CursorLockMode.None;
+        Cursor.lockState = CursorLockMode.None; // show cursor in pause menu
 
         PauseSceneAudio();
         SetState(State.Main);
@@ -162,12 +163,12 @@ public class PauseMenuController : MonoBehaviour
     void Resume()
     {
         paused = false;
-        Time.timeScale = 1f;
+        Time.timeScale = 1f; // unfreeze the game
 
         if (pauseCanvasRoot != null) pauseCanvasRoot.SetActive(false);
 
         Cursor.visible = false;
-        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.lockState = CursorLockMode.Locked; // hide cursor in gameplay
 
         ResumeSceneAudio();
     }
@@ -188,11 +189,11 @@ public class PauseMenuController : MonoBehaviour
 
         foreach (var src in FindObjectsOfType<AudioSource>(true))
         {
-            if (src == null || src == sfxSource) continue;
+            if (src == null || src == sfxSource) continue; // dont pause the menu sfx source
             if (!src.isPlaying) continue;
 
             src.Pause();
-            pausedSources.Add(src);
+            pausedSources.Add(src); // remember it so it can be unpaused on resume
         }
     }
 
@@ -202,7 +203,7 @@ public class PauseMenuController : MonoBehaviour
         if (muteListener) AudioListener.volume = savedListenerVolume;
 
         foreach (var src in pausedSources)
-            if (src != null) src.UnPause();
+            if (src != null) src.UnPause(); // resume all paused sources
 
         pausedSources.Clear();
     }
@@ -211,14 +212,14 @@ public class PauseMenuController : MonoBehaviour
     {
         if (state == State.Main)
         {
-            if (mainIndex == 0) { Resume(); return; }
-            if (mainIndex == 1) { SetState(State.Options); return; }
+            if (mainIndex == 0) { Resume(); return; }         // Resume
+            if (mainIndex == 1) { SetState(State.Options); return; } // Options
             if (mainIndex == 2)
             {
                 paused = false;
                 Time.timeScale = 1f;
                 ResumeSceneAudio();
-                SceneManager.LoadScene(mainMenuSceneName);
+                SceneManager.LoadScene(mainMenuSceneName); // Quit to Main Menu
                 return;
             }
         }
@@ -265,7 +266,7 @@ public class PauseMenuController : MonoBehaviour
     void LoadVolumeToSlider()
     {
         if (volumeSlider == null) return;
-        volumeSlider.SetValueWithoutNotify(Mathf.Clamp01(PlayerPrefs.GetFloat(VolumePrefKey, 1f)));
+        volumeSlider.SetValueWithoutNotify(Mathf.Clamp01(PlayerPrefs.GetFloat(VolumePrefKey, 1f))); // load saved volume
     }
 
     void SetVolume(float v)
@@ -294,9 +295,7 @@ public class PauseMenuController : MonoBehaviour
     void ApplyAudioVisuals()
     {
         if (masterGlow == null || audioBackGlow == null) return;
-
         if (state != State.Audio) { masterGlow.color = normalGlow; audioBackGlow.color = normalGlow; return; }
-
         masterGlow.color = (audioIndex == 0) ? selectedGlow : normalGlow;
         audioBackGlow.color = (audioIndex == 1) ? selectedGlow : normalGlow;
     }
@@ -304,12 +303,8 @@ public class PauseMenuController : MonoBehaviour
     void PulseSelected()
     {
         TextMeshProUGUI t = null;
-
-        if (state == State.Main && mainGlowItems != null && mainGlowItems.Length > 0)
-            t = mainGlowItems[mainIndex];
-        else if (state == State.Options && optionsGlowItems != null && optionsGlowItems.Length > 0)
-            t = optionsGlowItems[optionsIndex];
-
+        if (state == State.Main && mainGlowItems != null && mainGlowItems.Length > 0) t = mainGlowItems[mainIndex];
+        else if (state == State.Options && optionsGlowItems != null && optionsGlowItems.Length > 0) t = optionsGlowItems[optionsIndex];
         if (t == null) return;
 
         float p = 1 - pulseAmount + (Mathf.Sin(Time.unscaledTime * pulseSpeed) * .5f + .5f) * pulseAmount;
@@ -319,10 +314,8 @@ public class PauseMenuController : MonoBehaviour
     void PulseAudio()
     {
         if (state != State.Audio) return;
-
         var t = audioIndex == 0 ? masterGlow : audioBackGlow;
         if (t == null) return;
-
         float p = 1 - pulseAmount + (Mathf.Sin(Time.unscaledTime * pulseSpeed) * .5f + .5f) * pulseAmount;
         t.color = new Color(selectedGlow.r * p, selectedGlow.g * p, selectedGlow.b * p, selectedGlow.a);
     }

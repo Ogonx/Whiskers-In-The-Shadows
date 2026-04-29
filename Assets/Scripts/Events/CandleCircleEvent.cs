@@ -4,7 +4,7 @@ using UnityEngine;
 public class CandleCircleEvent : MonoBehaviour
 {
     [Header("Candles")]
-    public Light[] candleLights;
+    public Light[] candleLights; // all the candle lights to extinguish
 
     [Header("Whispers")]
     public AudioSource whisperSource;
@@ -12,7 +12,7 @@ public class CandleCircleEvent : MonoBehaviour
     [Range(0f, 1f)] public float whisperVolume = 0.6f;
 
     [Header("Flicker Before Extinguish")]
-    public float flickerTime = 0.5f;
+    public float flickerTime = 0.5f; // how long each candle flickers before going out
 
     bool triggered;
 
@@ -32,31 +32,31 @@ public class CandleCircleEvent : MonoBehaviour
             whisperSource.loop = false;
             whisperSource.volume = 0f;
             whisperSource.Play();
-            StartCoroutine(FadeAudio(whisperSource, 0f, whisperVolume, 1.5f));
+            StartCoroutine(FadeAudio(whisperSource, 0f, whisperVolume, 1.5f)); // fade whispers in
         }
 
         foreach (var light in candleLights)
         {
             if (light == null) continue;
-            yield return StartCoroutine(FlickerAndExtinguish(light));
-            yield return new WaitForSeconds(Random.Range(0.2f, 0.6f));
+            yield return StartCoroutine(FlickerAndExtinguish(light));   // flicker each candle
+            yield return new WaitForSeconds(Random.Range(0.2f, 0.6f)); // random gap between each one
         }
     }
 
     IEnumerator FlickerAndExtinguish(Light l)
     {
         float t = 0f;
-        float baseIntensity = l.intensity;
+        float baseIntensity = l.intensity; // save original intensity
 
         while (t < flickerTime)
         {
             t += Time.deltaTime;
-            l.intensity = baseIntensity * Random.Range(0.1f, 1f);
+            l.intensity = baseIntensity * Random.Range(0.1f, 1f); // randomly flicker the light
             yield return null;
         }
 
-        l.intensity = 0f;
-        l.enabled = false;
+        l.intensity = 0f;   // turn it off
+        l.enabled = false;  // disable the light component completely
     }
 
     IEnumerator FadeAudio(AudioSource src, float from, float to, float dur)
@@ -66,7 +66,7 @@ public class CandleCircleEvent : MonoBehaviour
         while (t < dur)
         {
             t += Time.deltaTime;
-            src.volume = Mathf.Lerp(from, to, t / dur);
+            src.volume = Mathf.Lerp(from, to, t / dur); // gradually change volume
             yield return null;
         }
         src.volume = to;

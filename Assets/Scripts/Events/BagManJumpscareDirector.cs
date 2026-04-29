@@ -10,27 +10,27 @@ public class BagManJumpscareDirector : MonoBehaviour
     [SerializeField] PSXCameraFollow followCam;
 
     [Header("BagMan Path")]
-    [SerializeField] Transform spawnPoint;
-    [SerializeField] Transform endPoint;
+    [SerializeField] Transform spawnPoint; // where BagMan appears
+    [SerializeField] Transform endPoint;   // where BagMan runs to
 
     [Header("Camera Pan To BagMan")]
-    [SerializeField] float panToEnemyDuration = 1.0f;
-    [SerializeField] float holdOnEnemyTime = 2.5f;
-    [SerializeField] float panBackDuration = 1.0f;
+    [SerializeField] float panToEnemyDuration = 1.0f; // how long the camera takes to pan to BagMan
+    [SerializeField] float holdOnEnemyTime = 2.5f;    // how long to track BagMan while he runs
+    [SerializeField] float panBackDuration = 1.0f;    // how long to pan back to player
 
     [Header("Camera Shake")]
-    [SerializeField] float shakeDuration = 0.5f;
-    [SerializeField] float shakeMagnitude = 0.05f;
+    [SerializeField] float shakeDuration = 0.5f;   // how long the shake lasts
+    [SerializeField] float shakeMagnitude = 0.05f; // how intense the shake is
 
     [Header("Audio")]
     [SerializeField] AudioSource sfxSource;
-    [SerializeField] AudioClip scareSting;
-    [SerializeField] AudioClip footstepsClip;
+    [SerializeField] AudioClip scareSting;    // jumpscare sound
+    [SerializeField] AudioClip footstepsClip; // BagMan footstep sound
 
     [Header("Disable During Scare")]
-    [SerializeField] MonoBehaviour[] disablePlayerScripts;
+    [SerializeField] MonoBehaviour[] disablePlayerScripts; // scripts to disable so player cant move
 
-    bool played;
+    bool played; // stops the sequence firing more than once
 
     public void Play()
     {
@@ -43,11 +43,11 @@ public class BagManJumpscareDirector : MonoBehaviour
     {
         if (!cam) cam = Camera.main;
 
-        // freeze player
+        // freeze player by disabling their scripts
         foreach (var mb in disablePlayerScripts)
             if (mb) mb.enabled = false;
 
-        // freeze rigidbody
+        // stop the rigidbody moving
         Rigidbody rb = player.GetComponent<Rigidbody>();
         if (rb) rb.linearVelocity = Vector3.zero;
 
@@ -55,25 +55,23 @@ public class BagManJumpscareDirector : MonoBehaviour
         Animator catAnim = player.GetComponent<Animator>();
         if (catAnim) catAnim.SetFloat("Speed", 0f);
 
-        // disable follow camera
+        // disable the follow camera so we can manually control it
         if (followCam) followCam.enabled = false;
 
-        // play footsteps and sting
-        if (sfxSource && footstepsClip)
-            sfxSource.PlayOneShot(footstepsClip);
-        if (sfxSource && scareSting)
-            sfxSource.PlayOneShot(scareSting);
+        // play footsteps and scare sting at the same time
+        if (sfxSource && footstepsClip) sfxSource.PlayOneShot(footstepsClip);
+        if (sfxSource && scareSting) sfxSource.PlayOneShot(scareSting);
 
-        // spawn bagman at point 1
+        // activate BagMan and send him running toward the end point
         bagMan.gameObject.SetActive(true);
         bagMan.transform.position = spawnPoint.position;
         bagMan.transform.LookAt(new Vector3(endPoint.position.x, spawnPoint.position.y, endPoint.position.z));
         bagMan.RushToPoint(endPoint);
 
-        // camera shake
+        // shake the camera at the same time BagMan appears
         StartCoroutine(ShakeCamera(cam.transform, shakeDuration, shakeMagnitude));
 
-        // pan camera to bagman
+        // pan camera from player to BagMan
         Transform camT = cam.transform;
         Quaternion startRot = camT.rotation;
         Vector3 lookPoint = bagMan.transform.position + Vector3.up * 1.3f;
@@ -84,26 +82,25 @@ public class BagManJumpscareDirector : MonoBehaviour
         {
             t += Time.deltaTime;
             float k = Mathf.SmoothStep(0f, 1f, t / panToEnemyDuration);
-            camT.rotation = Quaternion.Slerp(startRot, targetRot, k);
+            camT.rotation = Quaternion.Slerp(startRot, targetRot, k); // smoothly pan to BagMan
             yield return null;
         }
 
-        // hold on bagman while he runs
+        // track BagMan while he runs for holdOnEnemyTime seconds
         float holdTimer = 0f;
         while (holdTimer < holdOnEnemyTime)
         {
             holdTimer += Time.deltaTime;
-            // keep camera tracking bagman while he runs
             if (bagMan.gameObject.activeSelf)
             {
                 Vector3 trackPoint = bagMan.transform.position + Vector3.up * 1.3f;
                 Quaternion trackRot = Quaternion.LookRotation(trackPoint - camT.position);
-                camT.rotation = Quaternion.Slerp(camT.rotation, trackRot, Time.deltaTime * 3f);
+                camT.rotation = Quaternion.Slerp(camT.rotation, trackRot, Time.deltaTime * 3f); // keep camera on BagMan
             }
             yield return null;
         }
 
-        // pan back to player
+        // pan back to the player
         Quaternion panBackStart = camT.rotation;
         Quaternion panBackTarget = startRot;
 
@@ -112,31 +109,30 @@ public class BagManJumpscareDirector : MonoBehaviour
         {
             t += Time.deltaTime;
             float k = Mathf.SmoothStep(0f, 1f, t / panBackDuration);
-            camT.rotation = Quaternion.Slerp(panBackStart, panBackTarget, k);
+            camT.rotation = Quaternion.Slerp(panBackStart, panBackTarget, k); // pan back
             yield return null;
         }
 
-        // re-enable everything
+        // re-enable the follow camera and player scripts
         if (followCam) followCam.enabled = true;
-
         foreach (var mb in disablePlayerScripts)
             if (mb) mb.enabled = true;
     }
 
     IEnumerator ShakeCamera(Transform camT, float duration, float magnitude)
     {
-        Vector3 originalPos = camT.localPosition;
+        Vector3 originalPos = camT.localPosition; // save original position
         float elapsed = 0f;
 
         while (elapsed < duration)
         {
             elapsed += Time.deltaTime;
-            float x = Random.Range(-1f, 1f) * magnitude;
-            float y = Random.Range(-1f, 1f) * magnitude;
+            float x = Random.Range(-1f, 1f) * magnitude; // random horizontal offset
+            float y = Random.Range(-1f, 1f) * magnitude; // random vertical offset
             camT.localPosition = new Vector3(originalPos.x + x, originalPos.y + y, originalPos.z);
             yield return null;
         }
 
-        camT.localPosition = originalPos;
+        camT.localPosition = originalPos; // snap back to original position when done
     }
 }

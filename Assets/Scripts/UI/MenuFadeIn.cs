@@ -6,11 +6,10 @@ public class MenuFadeIn : MonoBehaviour
 {
     [Header("Fade Image")]
     public Image fadeImage;
-
     [Header("Timing")]
     public float fadeDuration = 1.0f;
 
-    bool busy;
+    bool busy; // prevents multiple fades running at once
 
     void Awake()
     {
@@ -22,9 +21,9 @@ public class MenuFadeIn : MonoBehaviour
     {
         if (fadeImage == null) return;
         fadeImage.gameObject.SetActive(true);
-        SetAlpha(1f);
+        SetAlpha(1f);             // start fully black
         fadeDuration = duration;
-        StartCoroutine(FadeTo(0f));
+        StartCoroutine(FadeTo(0f)); // fade to transparent
     }
 
     public IEnumerator FadeInToBlack(float duration)
@@ -32,7 +31,7 @@ public class MenuFadeIn : MonoBehaviour
         if (fadeImage == null) yield break;
         fadeImage.gameObject.SetActive(true);
         fadeDuration = duration;
-        yield return FadeTo(1f);
+        yield return FadeTo(1f); // fade to fully black
     }
 
     IEnumerator FadeTo(float targetA)
@@ -47,7 +46,7 @@ public class MenuFadeIn : MonoBehaviour
         while (t < fadeDuration)
         {
             t += Time.unscaledDeltaTime;
-            c.a = Mathf.Lerp(startA, targetA, t / fadeDuration);
+            c.a = Mathf.Lerp(startA, targetA, t / fadeDuration); // lerp alpha toward target
             fadeImage.color = c;
             yield return null;
         }
