@@ -1,8 +1,10 @@
 Whiskers in the Shadows
+
 A PSX-style first-person horror game built in Unity 6 for my final year project.
 You play as a cat searching for your missing owner. What starts as a quiet exploration through a neighbourhood turns into something much darker.
 
 About
+
 Whiskers in the Shadows is a short horror experience inspired by PSX-era games like Silent Hill and the work of Puppet Combo. The game uses a custom URP rendering pipeline (URP-PSX-FORKED) to achieve pixelation, CRT scanlines, dithering, vertex snapping and custom fog — all the visual hallmarks of late 90s PlayStation horror.
 The game was built solo over the course of a final year project, developed iteratively in four stages: Prototype, Alpha, Beta and Final.
 
