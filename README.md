@@ -4,7 +4,7 @@ A PSX-style first-person horror game built in Unity 6 as a final year project.
 You play as a cat searching for your missing owner. What starts as quiet exploration 
 through a neighbourhood turns into something much darker.
 
-🎮 **[Play on itch.io](https://ogonx.itch.io/whiskers-in-the-shadows)** 
+🎮 **[Download on itch.io](https://ogonx.itch.io/whiskers-in-the-sd)**
 
 
 ---
